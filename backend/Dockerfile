@@ -19,4 +19,5 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
+# Run migrations automatically before starting the server
+CMD sh -c "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 config.wsgi:application"
