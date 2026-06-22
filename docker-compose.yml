@@ -14,5 +14,38 @@ services:
     volumes:
       - db_data:/var/lib/mysql
 
+  backend:
+    # To use pre-built image instead of building locally, uncomment the line below and comment 'build':
+    # image: ghcr.io/fikrinasarudin/wealth-tracker-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - MYSQL_DATABASE=wealth_tracker
+      - MYSQL_USER=wt_user
+      - MYSQL_PASSWORD=wt_password
+      - DB_HOST=db
+      - DB_PORT=3306
+      - SECRET_KEY=your_super_secret_key_change_me
+      - DEBUG=False
+    depends_on:
+      - db
+    # We expose 8000 but it's only needed internally by the frontend nginx proxy
+    # ports:
+    #   - "8000:8000"
+
+  frontend:
+    # To use pre-built image instead of building locally, uncomment the line below and comment 'build':
+    # image: ghcr.io/fikrinasarudin/wealth-tracker-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
 volumes:
   db_data:

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-n8o-tlo*i(s02o8+-s*kw_o_@2+h(d6rqh77-$&qvf^-xx)@jn
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -83,14 +83,16 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+import os
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'wealth_tracker',
-        'USER': 'wt_user',
-        'PASSWORD': 'wt_password',
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
+        'NAME': os.environ.get('MYSQL_DATABASE', 'wealth_tracker'),
+        'USER': os.environ.get('MYSQL_USER', 'wt_user'),
+        'PASSWORD': os.environ.get('MYSQL_PASSWORD', 'wt_password'),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
     }
 }
 
