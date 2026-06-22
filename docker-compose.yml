@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  db:
+  db_wealth_tracker:
     image: mysql:8.0
     restart: always
     environment:
@@ -9,12 +9,10 @@ services:
       MYSQL_USER: 'wt_user'
       MYSQL_PASSWORD: 'wt_password'
       MYSQL_ROOT_PASSWORD: 'root_password'
-    ports:
-      - '3306:3306'
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data_wealth_tracker:/var/lib/mysql
 
-  backend:
+  backend_wealth_tracker:
     # To use pre-built image instead of building locally, uncomment the line below and comment 'build':
     # image: ghcr.io/fikrinasarudin/wealth-tracker-backend:latest
     build:
@@ -25,17 +23,17 @@ services:
       - MYSQL_DATABASE=wealth_tracker
       - MYSQL_USER=wt_user
       - MYSQL_PASSWORD=wt_password
-      - DB_HOST=db
+      - DB_HOST=db_wealth_tracker
       - DB_PORT=3306
       - SECRET_KEY=your_super_secret_key_change_me
       - DEBUG=False
     depends_on:
-      - db
+      - db_wealth_tracker
     # We expose 8000 but it's only needed internally by the frontend nginx proxy
     # ports:
     #   - "8000:8000"
 
-  frontend:
+  frontend_wealth_tracker:
     # To use pre-built image instead of building locally, uncomment the line below and comment 'build':
     # image: ghcr.io/fikrinasarudin/wealth-tracker-frontend:latest
     build:
@@ -45,7 +43,7 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - backend
+      - backend_wealth_tracker
 
 volumes:
-  db_data:
+  db_data_wealth_tracker:
