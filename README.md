@@ -7,31 +7,47 @@ This application allows you to track:
 2. **Investments**: Monthly portfolio snapshots, profit tracking, and asset allocation.
 3. **Liabilities**: Loan tracking, debt reduction, and remaining principal balances.
 
-## 🚀 Homelab Deployment (Recommended)
+---
 
-Wealth Tracker is built for containerized environments. It automatically builds and pushes Docker images to GitHub Container Registry (GHCR) using GitHub Actions.
+## 🚀 Homelab Deployment (Docker Compose)
 
-### Option A: Docker Compose (Easiest)
+Wealth Tracker is built for containerized environments. The easiest and officially supported way to run the application is using Docker Compose. 
 
-If you are running Docker on your homelab (e.g., Ubuntu VM, Proxmox LXC), you can deploy the entire stack with a single command.
+### 1. Prerequisites
+Ensure you have Docker and Docker Compose installed on your system.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/FikriNasarudin/wealth-tracker.git
-   cd wealth-tracker
-   ```
-2. *(Optional)* If you want to use the pre-built GHCR images instead of building locally, edit the `docker-compose.yml` to uncomment the `image: ghcr.io/...` lines and comment the `build:` lines.
-3. Start the services in detached mode:
-   ```bash
-   docker compose up -d
-   ```
-4. **Migrate the Database**: Since it's the first run, initialize the Django tables:
-   ```bash
-   docker compose exec backend python manage.py migrate
-   ```
-5. Access the application in your browser at `http://<your-server-ip>/`.
+### 2. Installation
+Clone the repository to your server:
+```bash
+git clone https://github.com/FikriNasarudin/wealth-tracker.git
+cd wealth-tracker
+```
 
-### Option B: Kubernetes (K3s, Minikube, Proxmox)
+### 3. Start the Application
+Bring up the entire stack (Database, Backend, and Frontend). By default, this will automatically build the container images from the source code locally:
+```bash
+docker compose up -d --build
+```
+
+### 4. Initialize the Database
+Because this is your first time running the application, you must initialize the database tables:
+```bash
+docker compose exec backend python manage.py migrate
+```
+
+*(Optional)* Create an administrative user to access the Django backend panel:
+```bash
+docker compose exec backend python manage.py createsuperuser
+```
+
+### 5. Access the Application
+You can now access the Wealth Tracker application in your web browser!
+- **Frontend Dashboard**: `http://<your-server-ip>/`
+- **Backend Admin Panel**: `http://<your-server-ip>:8000/admin/`
+
+---
+
+## 🏗️ Advanced Kubernetes Deployment (K3s, Minikube, Proxmox)
 
 For advanced homelab users, standard Kubernetes manifests are provided.
 
@@ -48,8 +64,7 @@ For advanced homelab users, standard Kubernetes manifests are provided.
    ```bash
    kubectl apply -f k8s/ingress.yaml
    ```
-4. Add `wealthtracker.local` to your local machine's `/etc/hosts` pointing to your cluster IP.
-5. Initialize the database by getting the backend pod name:
+4. Initialize the database by getting the backend pod name:
    ```bash
    kubectl get pods -l app=backend
    kubectl exec -it <backend-pod-name> -- python manage.py migrate
@@ -77,7 +92,6 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
-The backend API will run at `http://127.0.0.1:8000/`.
 
 ### 3. Run the Vue.js Frontend
 Open a new terminal window, navigate into the `frontend` directory:
@@ -86,7 +100,6 @@ cd frontend
 npm install
 npm run dev
 ```
-The frontend application will run at `http://localhost:5173/`. 
 
 ## 📝 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
