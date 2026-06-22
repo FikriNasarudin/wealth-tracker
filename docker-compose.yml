@@ -14,10 +14,10 @@ services:
 
   backend_wealth_tracker:
     # To use pre-built image instead of building locally, uncomment the line below and comment 'build':
-    # image: ghcr.io/fikrinasarudin/wealth-tracker-backend:latest
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/fikrinasarudin/wealth-tracker-backend:latest
+    # build:
+    #   context: ./backend
+    #   dockerfile: Dockerfile
     restart: always
     environment:
       - MYSQL_DATABASE=wealth_tracker
@@ -37,13 +37,13 @@ services:
 
   frontend_wealth_tracker:
     # To use pre-built image instead of building locally, uncomment the line below and comment 'build':
-    # image: ghcr.io/fikrinasarudin/wealth-tracker-frontend:latest
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        # Optional: Enable Google Login on the frontend
-        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-}
+    image: ghcr.io/fikrinasarudin/wealth-tracker-frontend:latest
+    # build:
+    #   context: ./frontend
+    #   dockerfile: Dockerfile
+    #   args:
+    #     # Optional: Enable Google Login on the frontend
+    #     - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-}
     restart: always
     ports:
       - "80:80"
