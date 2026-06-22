@@ -47,5 +47,7 @@ class GoogleAuthSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Wrong issuer.")
                 
             return idinfo
-        except ValueError:
-            raise serializers.ValidationError("Invalid Google token")
+        except ValueError as e:
+            raise serializers.ValidationError(f"Invalid Google token: {str(e)}")
+        except Exception as e:
+            raise serializers.ValidationError(f"Google Auth Error: {str(e)}")
