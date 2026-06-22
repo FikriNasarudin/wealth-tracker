@@ -11,11 +11,26 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-if (googleClientId) {
-  app.use(vue3GoogleLogin, {
-    clientId: googleClientId
-  })
+async function initApp() {
+  try {
+    const response = await fetch('/api/auth/config/')
+    if (response.ok) {
+      const data = await response.json()
+      if (data.google_client_id) {
+        app.use(vue3GoogleLogin, { clientId: data.google_client_id })
+        app.provide('googleEnabled', true)
+      } else {
+        app.provide('googleEnabled', false)
+      }
+    } else {
+      app.provide('googleEnabled', false)
+    }
+  } catch (error) {
+    console.error('Failed to fetch auth config:', error)
+    app.provide('googleEnabled', false)
+  }
+
+  app.mount('#app')
 }
 
-app.mount('#app')
+initApp()

@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api'
 
@@ -43,7 +43,7 @@ const router = useRouter()
 const email = ref('')
 const password = ref('')
 const error = ref('')
-const googleEnabled = !!import.meta.env.VITE_GOOGLE_CLIENT_ID
+const googleEnabled = inject('googleEnabled', false)
 
 const handleGoogleLogin = async (response) => {
   try {

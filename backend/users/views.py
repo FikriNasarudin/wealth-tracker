@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from .serializers import UserSerializer, RegisterSerializer, GoogleAuthSerializer
 
 User = get_user_model()
@@ -43,6 +44,14 @@ class GoogleLoginView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"non_field_errors": [f"Server error during Google Login: {str(e)}"]}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class AuthConfigView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        return Response({
+            "google_client_id": getattr(settings, 'GOOGLE_CLIENT_ID', '')
+        })
 
 class UserProfileView(generics.RetrieveAPIView):
     permission_classes = (IsAuthenticated,)
