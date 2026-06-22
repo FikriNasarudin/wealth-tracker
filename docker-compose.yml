@@ -27,6 +27,8 @@ services:
       - DB_PORT=3306
       - SECRET_KEY=your_super_secret_key_change_me
       - DEBUG=False
+      # Optional: Enable Google Login by providing your Client ID
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     depends_on:
       - db_wealth_tracker
     # We expose 8000 but it's only needed internally by the frontend nginx proxy
@@ -39,6 +41,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Optional: Enable Google Login on the frontend
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-}
     restart: always
     ports:
       - "80:80"

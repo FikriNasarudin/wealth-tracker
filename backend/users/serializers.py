@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
@@ -34,8 +35,17 @@ class GoogleAuthSerializer(serializers.Serializer):
 
     def validate_token(self, token):
         try:
-            # We don't enforce CLIENT_ID here for simplicity, but in production we should
-            idinfo = id_token.verify_oauth2_token(token, requests.Request())
+            client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
+            if not client_id:
+                raise serializers.ValidationError("Google Login is not enabled on this server.")
+                
+            # Verify the token against the exact Client ID to prevent token spoofing
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), client_id)
+            
+            # Additional sanity check on issuer
+            if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+                raise serializers.ValidationError("Wrong issuer.")
+                
             return idinfo
         except ValueError:
             raise serializers.ValidationError("Invalid Google token")
