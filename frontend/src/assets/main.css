@@ -246,9 +246,9 @@ tbody tr:hover {
 /* Responsive Additions */
 .mobile-menu-toggle {
   display: none;
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
   z-index: 1000;
   background: var(--bg-card);
   color: var(--text-primary);
@@ -257,6 +257,34 @@ tbody tr:hover {
   padding: 0.5rem;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
+}
+
+/* Driver.js Customization for dark mode */
+.driver-popover {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius-md) !important;
+}
+
+.driver-popover-title {
+  color: var(--accent-primary) !important;
+  font-weight: 700 !important;
+}
+
+.driver-popover-description {
+  color: var(--text-secondary) !important;
+}
+
+.driver-popover-footer button {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  text-shadow: none !important;
+}
+
+.driver-popover-footer button:hover {
+  background-color: var(--accent-primary) !important;
 }
 
 @media (max-width: 768px) {
@@ -276,10 +304,31 @@ tbody tr:hover {
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 1rem;
+    padding-right: 4rem; /* Leave room for mobile menu toggle */
   }
   
   header > div {
     flex-wrap: wrap;
     width: 100%;
+  }
+
+  /* Improve grid columns for very small phones */
+  .main-content > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Add subtle scroll hint to tables on mobile */
+  .table-container {
+    position: relative;
+  }
+  .table-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to right, transparent, var(--bg-primary));
+    pointer-events: none;
   }
 }

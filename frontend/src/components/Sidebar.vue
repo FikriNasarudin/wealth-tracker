@@ -45,7 +45,8 @@
 
     </nav>
     <div class="sidebar-footer">
-      <button class="btn btn-secondary" style="width: 100%" @click="logout">Logout</button>
+      <button class="btn btn-secondary" style="width: 100%; margin-bottom: 0.5rem;" @click="replayTutorial">Help / Tutorial</button>
+      <button class="btn btn-danger" style="width: 100%" @click="logout">Logout</button>
     </div>
   </aside>
 </template>
@@ -90,6 +91,15 @@ watch(
   },
   { immediate: true }
 )
+
+const replayTutorial = () => {
+  localStorage.removeItem('tutorial_completed')
+  if (route.path === '/') {
+    window.location.search = '?tutorial=1'
+  } else {
+    router.push('/?tutorial=1')
+  }
+}
 
 const logout = () => {
   localStorage.removeItem('access_token')

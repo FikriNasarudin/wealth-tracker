@@ -1,8 +1,8 @@
 <template>
   <div class="main-content">
-    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <header id="tour-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
       <h1 style="font-weight: 600;">Dashboard</h1>
-      <div style="display: flex; gap: 1rem; align-items: center;">
+      <div id="tour-period-selector" style="display: flex; gap: 1rem; align-items: center;">
         <span class="text-muted">Viewing Period:</span>
         <select v-model="selectedMonth" class="form-input" style="width: 120px;" @change="fetchData">
           <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
@@ -13,7 +13,7 @@
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
       <!-- Total Investments Card -->
-      <div class="card">
+      <div id="tour-investments" class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Total Investments</div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(totalInvestments) }}</div>
         <div class="text-success" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
@@ -25,7 +25,7 @@
       </div>
 
       <!-- Total Liabilities Card -->
-      <div class="card">
+      <div id="tour-liabilities" class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Total Liabilities</div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(totalLiabilities) }}</div>
         <div class="text-warning" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
@@ -37,7 +37,7 @@
       </div>
 
       <!-- Net Worth Card -->
-      <div class="card" style="background: var(--accent-gradient); border: none;">
+      <div id="tour-networth" class="card" style="background: var(--accent-gradient); border: none;">
         <div style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem; font-weight: 500;">Estimated Net Worth</div>
         <div style="font-size: 2rem; font-weight: 700; color: #fff;">RM{{ formatCurrency(netWorth) }}</div>
         <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; margin-top: 0.5rem;">
@@ -46,7 +46,7 @@
       </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <div id="tour-charts" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card">
         <h3 style="margin-bottom: 1rem; font-weight: 600;">Compound Effect (Invested vs Profit)</h3>
         <div style="height: 300px;">
@@ -74,6 +74,8 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { driver } from 'driver.js'
+import 'driver.js/dist/driver.css'
 import api from '../services/api'
 import BarChart from '@/components/BarChart.vue'
 import GraphLine from '@/components/GraphLine.vue'
@@ -229,6 +231,74 @@ onMounted(async () => {
     console.error(e)
   }
 
-  fetchData()
+  await fetchData()
+
+  // Initialize Tutorial if first time or explicitly requested
+  if (!localStorage.getItem('tutorial_completed') || window.location.search.includes('tutorial=1')) {
+    setTimeout(() => {
+      const driverObj = driver({
+        showProgress: true,
+        animate: true,
+        steps: [
+          {
+            element: '#tour-header',
+            popover: {
+              title: 'Welcome to Wealth Tracker! 🎉',
+              description: 'Let us take a quick tour of your new financial dashboard.',
+              side: 'bottom', align: 'start'
+            }
+          },
+          {
+            element: '#tour-period-selector',
+            popover: {
+              title: 'Time Travel',
+              description: 'Use this selector to view your exact financial snapshot for any month in history.',
+              side: 'bottom', align: 'end'
+            }
+          },
+          {
+            element: '#tour-investments',
+            popover: {
+              title: 'Your Investments',
+              description: 'This tracks your total portfolio balance and highlights your overall profit percentage across all accounts.',
+              side: 'bottom', align: 'start'
+            }
+          },
+          {
+            element: '#tour-liabilities',
+            popover: {
+              title: 'Your Liabilities',
+              description: 'All your outstanding debts (loans, mortgages) are aggregated here so you know exactly what you owe.',
+              side: 'bottom', align: 'center'
+            }
+          },
+          {
+            element: '#tour-networth',
+            popover: {
+              title: 'Estimated Net Worth',
+              description: 'The golden metric. This automatically subtracts your liabilities from your investments to show your true wealth.',
+              side: 'bottom', align: 'end'
+            }
+          },
+          {
+            element: '#tour-charts',
+            popover: {
+              title: 'Visual Insights',
+              description: 'Watch your wealth compound over time. These charts automatically build themselves as you log data each month!',
+              side: 'top', align: 'center'
+            }
+          }
+        ],
+        onDestroyStarted: () => {
+          localStorage.setItem('tutorial_completed', 'true')
+          if (window.location.search.includes('tutorial=1')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+          driverObj.destroy();
+        }
+      })
+      driverObj.drive()
+    }, 500)
+  }
 })
 </script>
