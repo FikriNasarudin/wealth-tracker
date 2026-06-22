@@ -45,6 +45,16 @@ You can now access the Wealth Tracker application in your web browser!
 - **Frontend Dashboard**: `http://<your-server-ip>/`
 - **Backend Admin Panel**: `http://<your-server-ip>:8000/admin/`
 
+### 6. (Optional) Enable Google Login
+Google Login is disabled by default. To enable it:
+1. Create OAuth 2.0 Credentials in the [Google Cloud Console](https://console.cloud.google.com/).
+2. Add your server's URI to the "Authorized JavaScript origins" (e.g., `http://your-server-ip:80`).
+3. Open `docker-compose.yml` and replace the empty `GOOGLE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID` values with your generated Client ID.
+4. Rebuild the stack:
+   ```bash
+   docker compose up -d --build
+   ```
+
 ---
 
 ## 🏗️ Advanced Kubernetes Deployment (K3s, Minikube, Proxmox)
