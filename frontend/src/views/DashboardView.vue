@@ -12,10 +12,10 @@
     </header>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-      <!-- Total Investments Card -->
-      <div id="tour-investments" class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Total Investments</div>
-        <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(totalInvestments) }}</div>
+      <!-- Total Assets Card -->
+      <div id="tour-assets" class="card">
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Total Assets</div>
+        <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(totalAssets) }}</div>
         <div class="text-success" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
           <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -41,7 +41,7 @@
         <div style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem; font-weight: 500;">Estimated Net Worth</div>
         <div style="font-size: 2rem; font-weight: 700; color: #fff;">RM{{ formatCurrency(netWorth) }}</div>
         <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; margin-top: 0.5rem;">
-          Investments - Liabilities
+          Assets - Liabilities
         </div>
       </div>
     </div>
@@ -62,7 +62,7 @@
       </div>
 
       <div class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Investment Progress</h3>
+        <h3 style="margin-bottom: 1rem; font-weight: 600;">Asset Progress</h3>
         <div style="height: 300px;">
           <GraphLine v-if="yearlyData.length > 0" :labels="monthlyLabels" :datasets="progressDatasets" />
         </div>
@@ -85,13 +85,13 @@ const selectedMonth = ref(d.getMonth() + 1)
 const selectedYear = ref(d.getFullYear())
 const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-const totalInvestments = ref(0)
+const totalAssets = ref(0)
 const profitPercentage = ref(0)
 const totalLiabilities = ref(0)
 const yearlyData = ref([])
 
 const netWorth = computed(() => {
-  return totalInvestments.value - totalLiabilities.value
+  return totalAssets.value - totalLiabilities.value
 })
 
 const formatCurrency = (val) => {
@@ -134,6 +134,14 @@ const progressDatasets = computed(() => [
     stepped: true, 
     backgroundColor: 'rgba(16, 185, 129, 0.2)', 
     borderColor: '#10B981' 
+  },
+  { 
+    label: 'Current Balance', 
+    data: yearlyData.value.map(d => d.totalBalance), 
+    fill: false,
+    stepped: true, 
+    backgroundColor: '#3B82F6', 
+    borderColor: '#3B82F6'
   }
 ])
 
@@ -142,8 +150,8 @@ const fetchData = async () => {
   const year = selectedYear.value
 
   try {
-    const invRes = await api.get(`/investments/snapshots/allocation/?month=${month}&year=${year}`)
-    totalInvestments.value = invRes.data.total_portfolio_balance || 0
+    const invRes = await api.get(`/assets/snapshots/allocation/?month=${month}&year=${year}`)
+    totalAssets.value = invRes.data.total_portfolio_balance || 0
     profitPercentage.value = invRes.data.total_profit_percentage || 0
   } catch (e) {
     console.error(e)
@@ -186,7 +194,7 @@ const fetchData = async () => {
   }
 
   try {
-    const res = await api.get('/investments/snapshots/')
+    const res = await api.get('/assets/snapshots/')
     const yearSnaps = res.data.filter(s => s.year === year)
     
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -209,7 +217,16 @@ const fetchData = async () => {
       }
     })
     
-    yearlyData.value = aggregated
+    const currentRealMonth = (new Date()).getMonth() + 1
+    const currentRealYear = (new Date()).getFullYear()
+    
+    if (year === currentRealYear) {
+      yearlyData.value = aggregated.slice(0, currentRealMonth)
+    } else if (year > currentRealYear) {
+      yearlyData.value = []
+    } else {
+      yearlyData.value = aggregated
+    }
   } catch(e) {
     console.error(e)
   }
@@ -217,7 +234,7 @@ const fetchData = async () => {
 
 onMounted(async () => {
   try {
-    const res = await api.get('/investments/snapshots/')
+    const res = await api.get('/assets/snapshots/')
     if (res.data && res.data.length > 0) {
       const latest = res.data.reduce((prev, current) => {
         if (current.year > prev.year) return current;
@@ -257,9 +274,9 @@ onMounted(async () => {
             }
           },
           {
-            element: '#tour-investments',
+            element: '#tour-assets',
             popover: {
-              title: 'Your Investments',
+              title: 'Your Assets',
               description: 'This tracks your total portfolio balance and highlights your overall profit percentage across all accounts.',
               side: 'bottom', align: 'start'
             }
@@ -276,7 +293,7 @@ onMounted(async () => {
             element: '#tour-networth',
             popover: {
               title: 'Estimated Net Worth',
-              description: 'The golden metric. This automatically subtracts your liabilities from your investments to show your true wealth.',
+              description: 'The golden metric. This automatically subtracts your liabilities from your assets to show your true wealth.',
               side: 'bottom', align: 'end'
             }
           },

@@ -88,39 +88,19 @@
         </div>
         
         <div class="form-group">
-          <label class="form-label">Category (e.g. Mortgage, Car Loan)</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <select v-if="!isNewCategory" v-model="form.categoryId" class="form-input">
-              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
-            <input v-else v-model="form.newCategoryName" type="text" class="form-input" placeholder="New Category" />
-            <button type="button" class="btn btn-secondary" @click="isNewCategory = !isNewCategory">
-              {{ isNewCategory ? 'Cancel' : 'New' }}
-            </button>
+          <label class="form-label">Lender</label>
+          <select v-model="form.lenderId" class="form-input" required>
+            <option value="" disabled>Select a Lender</option>
+            <option v-for="l in lenders" :key="l.id" :value="l.id">{{ l.name }}</option>
+          </select>
+          <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">
+            New lenders and categories can be created in the "Manage" page.
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Lender (e.g. Bank of America)</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <select v-if="!isNewLender" v-model="form.lenderId" class="form-input">
-              <option v-for="l in lenders" :key="l.id" :value="l.id">{{ l.name }}</option>
-            </select>
-            <input v-else v-model="form.newLenderName" type="text" class="form-input" placeholder="New Lender" />
-            <button type="button" class="btn btn-secondary" @click="isNewLender = !isNewLender">
-              {{ isNewLender ? 'Cancel' : 'New' }}
-            </button>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Original Loan Amount</label>
-          <input v-model="form.originalAmount" type="number" step="0.01" class="form-input" required />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Remaining Principal</label>
-          <input v-model="form.remainingPrincipal" type="number" step="0.01" class="form-input" required />
+          <label class="form-label">Remaining Principal (Leave empty to auto-calculate)</label>
+          <input v-model="form.remainingPrincipal" type="number" step="0.01" class="form-input" />
         </div>
 
         <div class="form-group">
@@ -149,8 +129,7 @@ const editingId = ref(null)
 
 const categories = ref([])
 const lenders = ref([])
-const isNewCategory = ref(false)
-const isNewLender = ref(false)
+
 
 const filters = ref({
   month: '',
@@ -178,11 +157,7 @@ const getInitialForm = () => {
   return {
     month: d.getMonth() + 1,
     year: d.getFullYear(),
-    categoryId: null,
-    newCategoryName: '',
     lenderId: null,
-    newLenderName: '',
-    originalAmount: '',
     remainingPrincipal: '',
     monthlyPayment: ''
   }
@@ -213,9 +188,6 @@ const fetchOptions = async () => {
     categories.value = catRes.data
     lenders.value = lendRes.data
     
-    if (categories.value.length > 0 && !form.value.categoryId) {
-      form.value.categoryId = categories.value[0].id
-    }
     if (lenders.value.length > 0 && !form.value.lenderId) {
       form.value.lenderId = lenders.value[0].id
     }
@@ -227,8 +199,7 @@ const fetchOptions = async () => {
 const openModal = () => {
   editMode.value = false
   editingId.value = null
-  isNewCategory.value = false
-  isNewLender.value = false
+
   form.value = getInitialForm()
   fetchOptions()
   showModal.value = true
@@ -237,21 +208,14 @@ const openModal = () => {
 const editSnapshot = async (item) => {
   editMode.value = true
   editingId.value = item.id
-  isNewCategory.value = false
-  isNewLender.value = false
   form.value = {
     month: item.month,
     year: item.year,
-    categoryId: item.category,
-    newCategoryName: '',
     lenderId: item.lender,
-    newLenderName: '',
-    originalAmount: item.original_loan_amount,
     remainingPrincipal: item.remaining_principal,
     monthlyPayment: item.monthly_payment
   }
   await fetchOptions()
-  form.value.categoryId = item.category
   form.value.lenderId = item.lender
   showModal.value = true
 }
@@ -271,27 +235,14 @@ const deleteSnapshot = async (id) => {
 const submitSnapshot = async () => {
   loading.value = true
   try {
-    let categoryId = form.value.categoryId
-    let lenderId = form.value.lenderId
-
-    if (isNewCategory.value && form.value.newCategoryName) {
-      const catRes = await api.post('/liabilities/categories/', { name: form.value.newCategoryName })
-      categoryId = catRes.data.id
-    }
-
-    if (isNewLender.value && form.value.newLenderName) {
-      const lendRes = await api.post('/liabilities/lenders/', { name: form.value.newLenderName })
-      lenderId = lendRes.data.id
-    }
-
     const payload = {
       month: form.value.month,
       year: form.value.year,
-      category: categoryId,
-      lender: lenderId,
-      original_loan_amount: form.value.originalAmount,
-      remaining_principal: form.value.remainingPrincipal,
+      lender: form.value.lenderId,
       monthly_payment: form.value.monthlyPayment
+    }
+    if (form.value.remainingPrincipal !== '' && form.value.remainingPrincipal !== null) {
+      payload.remaining_principal = form.value.remainingPrincipal
     }
 
     if (editMode.value) {

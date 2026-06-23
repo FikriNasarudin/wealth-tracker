@@ -22,7 +22,10 @@ class InvestmentSnapshotSerializer(serializers.ModelSerializer):
     class Meta:
         model = InvestmentSnapshot
         fields = '__all__'
-        extra_kwargs = {'user': {'read_only': True}}
+        extra_kwargs = {
+            'user': {'read_only': True},
+            'category': {'required': False}
+        }
 
     def get_absolute_profit(self, obj):
         return round(obj.current_balance - obj.total_invested, 2)

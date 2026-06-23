@@ -5,6 +5,7 @@ class LiabilityCategory(models.Model):
     name = models.CharField(max_length=255)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='liability_categories')
     is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name_plural = "Liability categories"
@@ -15,7 +16,10 @@ class LiabilityCategory(models.Model):
 class Lender(models.Model):
     name = models.CharField(max_length=255)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='lenders')
+    category = models.ForeignKey(LiabilityCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='lenders')
+    original_loan_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name

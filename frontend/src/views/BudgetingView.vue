@@ -35,7 +35,7 @@
         <h3 style="margin-bottom: 1rem; font-weight: 600;">Expense Breakdown</h3>
         <div v-if="expenseBreakdown.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No expenses recorded for this month.</div>
         <div v-else style="display: flex; justify-content: center; align-items: center; min-height: 250px;">
-          <DoughnutChart :labels="expenseBreakdown.map(i => i.category)" :data="expenseBreakdown.map(i => i.amount)" />
+          <PieChart :labels="expenseBreakdown.map(i => i.category)" :data="expenseBreakdown.map(i => i.amount)" />
         </div>
       </div>
     </div>
@@ -91,7 +91,7 @@
 import { ref, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
-import DoughnutChart from '@/components/DoughnutChart.vue'
+import PieChart from '@/components/PieChart.vue'
 
 const income = ref(0)
 const expenses = ref(0)

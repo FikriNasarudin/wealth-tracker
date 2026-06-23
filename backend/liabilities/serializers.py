@@ -21,7 +21,12 @@ class LiabilitySnapshotSerializer(serializers.ModelSerializer):
     class Meta:
         model = LiabilitySnapshot
         fields = '__all__'
-        extra_kwargs = {'user': {'read_only': True}}
+        extra_kwargs = {
+            'user': {'read_only': True},
+            'category': {'required': False},
+            'original_loan_amount': {'required': False},
+            'remaining_principal': {'required': False}
+        }
 
     def get_debt_reduced(self, obj):
         return obj.original_loan_amount - obj.remaining_principal

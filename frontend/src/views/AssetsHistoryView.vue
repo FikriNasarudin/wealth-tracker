@@ -3,7 +3,7 @@
     <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
       <div>
         <h1 style="font-weight: 600;">Snapshot History</h1>
-        <p class="text-muted">Manage your raw investment snapshots.</p>
+        <p class="text-muted">Manage your raw asset snapshots.</p>
       </div>
       <button class="btn btn-primary" @click="openModal()">+ Add Snapshot</button>
     </header>
@@ -74,7 +74,7 @@
     </div>
 
     <!-- Modal -->
-    <Modal :show="showModal" :title="editMode ? 'Edit Investment Snapshot' : 'Add Investment Snapshot'" @close="showModal = false">
+    <Modal :show="showModal" :title="editMode ? 'Edit Asset Snapshot' : 'Add Asset Snapshot'" @close="showModal = false">
       <form @submit.prevent="submitSnapshot">
         <div style="display: flex; gap: 1rem;">
           <div class="form-group" style="flex: 1">
@@ -88,28 +88,13 @@
         </div>
         
         <div class="form-group">
-          <label class="form-label">Category (e.g. Stocks, Crypto)</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <select v-if="!isNewCategory" v-model="form.categoryId" class="form-input">
-              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
-            <input v-else v-model="form.newCategoryName" type="text" class="form-input" placeholder="New Category" />
-            <button type="button" class="btn btn-secondary" @click="isNewCategory = !isNewCategory">
-              {{ isNewCategory ? 'Cancel' : 'New' }}
-            </button>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Platform (e.g. Vanguard, Binance)</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <select v-if="!isNewPlatform" v-model="form.platformId" class="form-input">
-              <option v-for="p in platforms" :key="p.id" :value="p.id">{{ p.name }}</option>
-            </select>
-            <input v-else v-model="form.newPlatformName" type="text" class="form-input" placeholder="New Platform" />
-            <button type="button" class="btn btn-secondary" @click="isNewPlatform = !isNewPlatform">
-              {{ isNewPlatform ? 'Cancel' : 'New' }}
-            </button>
+          <label class="form-label">Platform</label>
+          <select v-model="form.platformId" class="form-input" required>
+            <option value="" disabled>Select a Platform</option>
+            <option v-for="p in platforms" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+          <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">
+            New platforms and categories can be created in the "Manage" page.
           </div>
         </div>
 
@@ -144,8 +129,7 @@ const editingId = ref(null)
 
 const categories = ref([])
 const platforms = ref([])
-const isNewCategory = ref(false)
-const isNewPlatform = ref(false)
+
 
 const filters = ref({
   month: '',
@@ -173,10 +157,7 @@ const getInitialForm = () => {
   return {
     month: d.getMonth() + 1,
     year: d.getFullYear(),
-    categoryId: null,
-    newCategoryName: '',
     platformId: null,
-    newPlatformName: '',
     totalInvested: '',
     currentBalance: ''
   }
@@ -188,7 +169,7 @@ const formatCurrency = (val) => Number(val).toLocaleString(undefined, { minimumF
 
 const fetchHistory = async () => {
   try {
-    const res = await api.get('/investments/snapshots/')
+    const res = await api.get('/assets/snapshots/')
     history.value = res.data.sort((a, b) => {
       if (b.year !== a.year) return b.year - a.year
       return b.month - a.month
@@ -201,15 +182,12 @@ const fetchHistory = async () => {
 const fetchOptions = async () => {
   try {
     const [catRes, platRes] = await Promise.all([
-      api.get('/investments/categories/'),
-      api.get('/investments/platforms/')
+      api.get('/assets/categories/'),
+      api.get('/assets/platforms/')
     ])
     categories.value = catRes.data
     platforms.value = platRes.data
     
-    if (categories.value.length > 0 && !form.value.categoryId) {
-      form.value.categoryId = categories.value[0].id
-    }
     if (platforms.value.length > 0 && !form.value.platformId) {
       form.value.platformId = platforms.value[0].id
     }
@@ -221,8 +199,7 @@ const fetchOptions = async () => {
 const openModal = () => {
   editMode.value = false
   editingId.value = null
-  isNewCategory.value = false
-  isNewPlatform.value = false
+
   form.value = getInitialForm()
   fetchOptions()
   showModal.value = true
@@ -231,20 +208,14 @@ const openModal = () => {
 const editSnapshot = async (item) => {
   editMode.value = true
   editingId.value = item.id
-  isNewCategory.value = false
-  isNewPlatform.value = false
   form.value = {
     month: item.month,
     year: item.year,
-    categoryId: item.category,
-    newCategoryName: '',
     platformId: item.platform,
-    newPlatformName: '',
     totalInvested: item.total_invested,
     currentBalance: item.current_balance
   }
   await fetchOptions()
-  form.value.categoryId = item.category
   form.value.platformId = item.platform
   showModal.value = true
 }
@@ -252,7 +223,7 @@ const editSnapshot = async (item) => {
 const deleteSnapshot = async (id) => {
   if (confirm('Are you sure you want to delete this snapshot?')) {
     try {
-      await api.delete(`/investments/snapshots/${id}/`)
+      await api.delete(`/assets/snapshots/${id}/`)
       fetchHistory()
     } catch (e) {
       console.error(e)
@@ -264,32 +235,18 @@ const deleteSnapshot = async (id) => {
 const submitSnapshot = async () => {
   loading.value = true
   try {
-    let categoryId = form.value.categoryId
-    let platformId = form.value.platformId
-
-    if (isNewCategory.value && form.value.newCategoryName) {
-      const catRes = await api.post('/investments/categories/', { name: form.value.newCategoryName })
-      categoryId = catRes.data.id
-    }
-
-    if (isNewPlatform.value && form.value.newPlatformName) {
-      const platRes = await api.post('/investments/platforms/', { name: form.value.newPlatformName })
-      platformId = platRes.data.id
-    }
-
     const payload = {
       month: form.value.month,
       year: form.value.year,
-      category: categoryId,
-      platform: platformId,
+      platform: form.value.platformId,
       total_invested: form.value.totalInvested,
       current_balance: form.value.currentBalance
     }
 
     if (editMode.value) {
-      await api.put(`/investments/snapshots/${editingId.value}/`, payload)
+      await api.put(`/assets/snapshots/${editingId.value}/`, payload)
     } else {
-      await api.post('/investments/snapshots/', payload)
+      await api.post('/assets/snapshots/', payload)
     }
 
     showModal.value = false

@@ -19,15 +19,16 @@
         </div>
       </div>
 
-      <!-- Investments Menu -->
+      <!-- Assets Menu -->
       <div class="menu-group">
-        <button class="nav-item menu-toggle" @click="toggleMenu('investments')" :class="{ active: openMenus.investments || isActivePrefix('/investments') }">
-          <span>Investments</span>
-          <span class="chevron" :class="{ open: openMenus.investments }">▼</span>
+        <button class="nav-item menu-toggle" @click="toggleMenu('assets')" :class="{ active: openMenus.assets || isActivePrefix('/assets') }">
+          <span>Assets</span>
+          <span class="chevron" :class="{ open: openMenus.assets }">▼</span>
         </button>
-        <div class="submenu" v-show="openMenus.investments">
-          <router-link to="/investments" class="submenu-item" exact-active-class="active">Overview</router-link>
-          <router-link to="/investments/history" class="submenu-item" active-class="active">History</router-link>
+        <div class="submenu" v-show="openMenus.assets">
+          <router-link to="/assets" class="submenu-item" exact-active-class="active">Overview</router-link>
+          <router-link to="/assets/history" class="submenu-item" active-class="active">History</router-link>
+          <router-link to="/assets/manage" class="submenu-item" active-class="active">Manage</router-link>
         </div>
       </div>
 
@@ -40,6 +41,7 @@
         <div class="submenu" v-show="openMenus.liabilities">
           <router-link to="/liabilities" class="submenu-item" exact-active-class="active">Overview</router-link>
           <router-link to="/liabilities/history" class="submenu-item" active-class="active">History</router-link>
+          <router-link to="/liabilities/manage" class="submenu-item" active-class="active">Manage</router-link>
         </div>
       </div>
 
@@ -69,7 +71,7 @@ const route = useRoute()
 
 const openMenus = ref({
   budgeting: false,
-  investments: false,
+  assets: false,
   liabilities: false
 })
 
@@ -86,7 +88,7 @@ watch(
   () => route.path,
   (newPath) => {
     if (newPath.startsWith('/budgeting')) openMenus.value.budgeting = true
-    if (newPath.startsWith('/investments')) openMenus.value.investments = true
+    if (newPath.startsWith('/assets')) openMenus.value.assets = true
     if (newPath.startsWith('/liabilities')) openMenus.value.liabilities = true
   },
   { immediate: true }

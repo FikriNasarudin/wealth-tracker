@@ -5,6 +5,7 @@ class InvestmentCategory(models.Model):
     name = models.CharField(max_length=255)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='investment_categories')
     is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name_plural = "Investment categories"
@@ -15,7 +16,9 @@ class InvestmentCategory(models.Model):
 class InvestmentPlatform(models.Model):
     name = models.CharField(max_length=255)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='investment_platforms')
+    category = models.ForeignKey(InvestmentCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='platforms')
     is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name

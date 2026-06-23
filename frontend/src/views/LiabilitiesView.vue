@@ -7,10 +7,14 @@
       </div>
       <div style="display: flex; gap: 1rem; align-items: center;">
         <span class="text-muted">Period:</span>
-        <select v-model="selectedMonth" class="form-input" style="width: 120px;" @change="fetchData">
+        <select v-model="selectedMonth" class="form-input" style="width: 120px;" @change="handleFilterChange">
           <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
         </select>
-        <input v-model="selectedYear" type="number" min="2000" max="2100" class="form-input" style="width: 100px;" @change="fetchData" />
+        <input v-model="selectedYear" type="number" min="2000" max="2100" class="form-input" style="width: 100px;" @change="handleFilterChange" />
+        <select v-model="filterLender" class="form-input" style="width: 150px;" @change="handleFilterChange">
+          <option value="">All Lenders</option>
+          <option v-for="l in lenders" :key="l.id" :value="l.id">{{ l.name }}</option>
+        </select>
         <button class="btn btn-primary" @click="showModal = true" style="margin-left: 1rem;">+ Add Snapshot</button>
       </div>
     </header>
@@ -19,14 +23,31 @@
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Original Loan Amount</div>
         <div style="font-size: 2rem; font-weight: 700;">RM{{ formatCurrency(totalOriginal) }}</div>
+        <div v-if="originalChange !== null" :class="originalChange > 0 ? 'text-danger' : (originalChange < 0 ? 'text-success' : 'text-muted')" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+          <svg v-if="originalChange > 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+          <svg v-else-if="originalChange < 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+          <span v-else style="margin-right: 0.25rem;">-</span>
+          {{ Math.abs(originalChange).toFixed(2) }}% vs last month
+        </div>
       </div>
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Remaining Principal</div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--danger);">RM{{ formatCurrency(totalRemaining) }}</div>
+        <div v-if="remainingChange !== null" :class="remainingChange > 0 ? 'text-danger' : (remainingChange < 0 ? 'text-success' : 'text-muted')" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+          <svg v-if="remainingChange > 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+          <svg v-else-if="remainingChange < 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+          <span v-else style="margin-right: 0.25rem;">-</span>
+          {{ Math.abs(remainingChange).toFixed(2) }}% vs last month
+        </div>
       </div>
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Total Debt Reduced</div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--success);">RM{{ formatCurrency(totalReduced) }}</div>
+        <div v-if="reducedChange !== null" :class="reducedChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+          <svg v-if="reducedChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+          <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+          {{ Math.abs(reducedChange).toFixed(2) }}% vs last month
+        </div>
       </div>
     </div>
 
@@ -49,7 +70,7 @@
         <h3 style="margin-bottom: 1rem; font-weight: 600;">Liability Distribution (Current Month)</h3>
         <div v-if="distribution.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No liabilities recorded for this period.</div>
         <div v-else style="display: flex; justify-content: center; align-items: center; min-height: 250px;">
-          <DoughnutChart :labels="distribution.map(i => i.category)" :data="distribution.map(i => i.balance)" />
+          <PieChart :labels="distribution.map(i => i.category)" :data="distribution.map(i => i.balance)" />
         </div>
       </div>
     </div>
@@ -69,39 +90,19 @@
         </div>
         
         <div class="form-group">
-          <label class="form-label">Category (e.g. Mortgage, Car Loan)</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <select v-if="!isNewCategory" v-model="form.categoryId" class="form-input">
-              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
-            <input v-else v-model="form.newCategoryName" type="text" class="form-input" placeholder="New Category" />
-            <button type="button" class="btn btn-secondary" @click="isNewCategory = !isNewCategory">
-              {{ isNewCategory ? 'Cancel' : 'New' }}
-            </button>
-          </div>
-        </div>
-
-        <div class="form-group">
           <label class="form-label">Lender (e.g. Bank of America)</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <select v-if="!isNewLender" v-model="form.lenderId" class="form-input">
-              <option v-for="l in lenders" :key="l.id" :value="l.id">{{ l.name }}</option>
-            </select>
-            <input v-else v-model="form.newLenderName" type="text" class="form-input" placeholder="New Lender" />
-            <button type="button" class="btn btn-secondary" @click="isNewLender = !isNewLender">
-              {{ isNewLender ? 'Cancel' : 'New' }}
-            </button>
+          <select v-model="form.lenderId" class="form-input" required>
+            <option value="" disabled>Select a Lender</option>
+            <option v-for="l in lenders" :key="l.id" :value="l.id">{{ l.name }}</option>
+          </select>
+          <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">
+            New lenders and categories can be created in the "Manage" page.
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Original Loan Amount</label>
-          <input v-model="form.originalAmount" type="number" step="0.01" class="form-input" required />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Remaining Principal</label>
-          <input v-model="form.remainingPrincipal" type="number" step="0.01" class="form-input" required />
+          <label class="form-label">Remaining Principal (Leave empty to auto-calculate)</label>
+          <input v-model="form.remainingPrincipal" type="number" step="0.01" class="form-input" />
         </div>
 
         <div class="form-group">
@@ -121,15 +122,27 @@
 import { ref, onMounted, computed } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
-import DoughnutChart from '@/components/DoughnutChart.vue'
+import PieChart from '@/components/PieChart.vue'
 import GraphLine from '@/components/GraphLine.vue'
 import BarChart from '@/components/BarChart.vue'
 
 const totalOriginal = ref(0)
 const totalRemaining = ref(0)
 const totalReduced = ref(0)
+const prevTotalOriginal = ref(0)
+const prevTotalRemaining = ref(0)
+const prevTotalReduced = ref(0)
 const distribution = ref([])
 const yearlyData = ref([])
+
+const calculateChange = (current, previous) => {
+  if (!previous) return null;
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+const originalChange = computed(() => calculateChange(totalOriginal.value, prevTotalOriginal.value))
+const remainingChange = computed(() => calculateChange(totalRemaining.value, prevTotalRemaining.value))
+const reducedChange = computed(() => calculateChange(totalReduced.value, prevTotalReduced.value))
 
 const monthlyLabels = computed(() => yearlyData.value.map(d => d.month))
 
@@ -162,26 +175,24 @@ const comparisonDatasets = computed(() => [
 const d = new Date()
 const selectedMonth = ref(d.getMonth() + 1)
 const selectedYear = ref(d.getFullYear())
+const filterLender = ref('')
 const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+const handleFilterChange = async () => {
+  await fetchData()
+}
 
 const showModal = ref(false)
 const loading = ref(false)
 
-const categories = ref([])
 const lenders = ref([])
-const isNewCategory = ref(false)
-const isNewLender = ref(false)
 
 const getInitialForm = () => {
   const d = new Date()
   return {
     month: d.getMonth() + 1,
     year: d.getFullYear(),
-    categoryId: null,
-    newCategoryName: '',
     lenderId: null,
-    newLenderName: '',
-    originalAmount: '',
     remainingPrincipal: '',
     monthlyPayment: ''
   }
@@ -193,17 +204,20 @@ const formatCurrency = (val) => Number(val).toLocaleString(undefined, { minimumF
 
 const fetchData = async () => {
   try {
-    const res = await api.get(`/liabilities/snapshots/summary/?month=${selectedMonth.value}&year=${selectedYear.value}`)
+    const res = await api.get(`/liabilities/snapshots/summary/?month=${selectedMonth.value}&year=${selectedYear.value}${filterLender.value ? '&lender_id=' + filterLender.value : ''}`)
     totalOriginal.value = res.data.total_original_loan_amount
     totalRemaining.value = res.data.total_remaining_principal
     totalReduced.value = res.data.total_debt_reduced
+    prevTotalOriginal.value = res.data.prev_total_original_loan_amount
+    prevTotalRemaining.value = res.data.prev_total_remaining_principal
+    prevTotalReduced.value = res.data.prev_total_debt_reduced
     distribution.value = res.data.distribution_by_category
   } catch (e) {
     console.error(e)
   }
 
   try {
-    const allRes = await api.get('/liabilities/snapshots/')
+    const allRes = await api.get(`/liabilities/snapshots/${filterLender.value ? '?lender_id=' + filterLender.value : ''}`)
     const allSnaps = allRes.data
     
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -242,16 +256,21 @@ const fetchData = async () => {
         tOriginal += parseFloat(s.original_loan_amount || 0)
       })
       
-      // Only plot if the month is not in the future
-      const currentRealMonth = (new Date()).getMonth() + 1
-      const currentRealYear = (new Date()).getFullYear()
-      if (selectedYear.value < currentRealYear || (selectedYear.value === currentRealYear && m <= currentRealMonth)) {
-         aggregated[m-1].remainingPrincipal = tRemaining
-         aggregated[m-1].originalAmount = tOriginal
-      }
+      // Set values for all 12 months, we will truncate the array later
+      aggregated[m-1].remainingPrincipal = tRemaining
+      aggregated[m-1].originalAmount = tOriginal
     }
     
-    yearlyData.value = aggregated
+    const currentRealMonth = (new Date()).getMonth() + 1
+    const currentRealYear = (new Date()).getFullYear()
+    
+    if (selectedYear.value === currentRealYear) {
+      yearlyData.value = aggregated.slice(0, currentRealMonth)
+    } else if (selectedYear.value > currentRealYear) {
+      yearlyData.value = []
+    } else {
+      yearlyData.value = aggregated
+    }
   } catch (e) {
     console.error(e)
   }
@@ -259,16 +278,11 @@ const fetchData = async () => {
 
 const fetchOptions = async () => {
   try {
-    const [catRes, lendRes] = await Promise.all([
-      api.get('/liabilities/categories/'),
+    const [lendRes] = await Promise.all([
       api.get('/liabilities/lenders/')
     ])
-    categories.value = catRes.data
     lenders.value = lendRes.data
     
-    if (categories.value.length > 0 && !form.value.categoryId) {
-      form.value.categoryId = categories.value[0].id
-    }
     if (lenders.value.length > 0 && !form.value.lenderId) {
       form.value.lenderId = lenders.value[0].id
     }
@@ -280,32 +294,25 @@ const fetchOptions = async () => {
 const submitSnapshot = async () => {
   loading.value = true
   try {
-    let categoryId = form.value.categoryId
-    let lenderId = form.value.lenderId
-
-    if (isNewCategory.value && form.value.newCategoryName) {
-      const catRes = await api.post('/liabilities/categories/', { name: form.value.newCategoryName })
-      categoryId = catRes.data.id
+    if (!form.value.lenderId) {
+      alert('Please select a lender.')
+      loading.value = false
+      return
     }
 
-    if (isNewLender.value && form.value.newLenderName) {
-      const lendRes = await api.post('/liabilities/lenders/', { name: form.value.newLenderName })
-      lenderId = lendRes.data.id
-    }
-
-    await api.post('/liabilities/snapshots/', {
+    const payload = {
       month: form.value.month,
       year: form.value.year,
-      category: categoryId,
-      lender: lenderId,
-      original_loan_amount: form.value.originalAmount,
-      remaining_principal: form.value.remainingPrincipal,
+      lender: form.value.lenderId,
       monthly_payment: form.value.monthlyPayment
-    })
+    }
+    if (form.value.remainingPrincipal !== '' && form.value.remainingPrincipal !== null) {
+      payload.remaining_principal = form.value.remainingPrincipal
+    }
+
+    await api.post('/liabilities/snapshots/', payload)
 
     showModal.value = false
-    isNewCategory.value = false
-    isNewLender.value = false
     
     // Automatically switch the view to the month/year of the newly added snapshot
     selectedMonth.value = form.value.month
