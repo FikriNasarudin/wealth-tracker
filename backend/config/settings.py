@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'budgeting.apps.BudgetingConfig',
     'investments.apps.InvestmentsConfig',
     'liabilities.apps.LiabilitiesConfig',
+    'banking',
+    'goals',
 ]
 
 MIDDLEWARE = [

@@ -20,6 +20,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/banking',
+      name: 'banking',
+      component: () => import('../views/BankingView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/budgeting',
       name: 'budgeting',
       component: () => import('../views/BudgetingView.vue'),
@@ -65,6 +71,12 @@ const router = createRouter({
       path: '/liabilities/manage',
       name: 'manage-liabilities',
       component: () => import('../views/ManageLiabilitiesView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/goals',
+      name: 'goals',
+      component: () => import('../views/GoalsView.vue'),
       meta: { requiresAuth: true }
     }
   ]

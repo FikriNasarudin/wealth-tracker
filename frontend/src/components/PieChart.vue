@@ -19,6 +19,10 @@ const props = defineProps({
   data: {
     type: Array,
     required: true
+  },
+  colors: {
+    type: Array,
+    required: false
   }
 })
 
@@ -35,11 +39,12 @@ const backgroundColors = [
 ]
 
 const chartData = computed(() => {
+  const bgColors = props.colors || backgroundColors.slice(0, props.data.length);
   return {
     labels: props.labels,
     datasets: [
       {
-        backgroundColor: backgroundColors.slice(0, props.data.length),
+        backgroundColor: bgColors,
         borderColor: '#1A233A', // Match card background to create a gap effect
         borderWidth: 2,
         data: props.data

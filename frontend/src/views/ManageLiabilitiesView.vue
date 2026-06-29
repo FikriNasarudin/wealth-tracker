@@ -48,6 +48,7 @@
               <option v-for="cat in activeCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
             </select>
             <input v-model="newLenderOriginalAmount" type="number" step="0.01" class="form-input" placeholder="Original Amount" required style="flex: 1" />
+            <input v-model="newLenderInterestRate" type="number" step="0.01" class="form-input" placeholder="Interest Rate (%)" style="flex: 1" />
             <button type="submit" class="btn btn-primary" :disabled="loading.len">Add</button>
           </div>
         </form>
@@ -56,7 +57,7 @@
             <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
               <template v-if="!len.isEditing">
                 <span :class="{ 'text-muted': !len.is_active }">{{ len.name }}</span>
-                <span class="text-muted" style="font-size: 0.875rem; margin-left: 0.5rem;">({{ getCategoryName(len.category) }} - RM{{ Number(len.original_loan_amount).toLocaleString(undefined, {minimumFractionDigits:2}) }})</span>
+                <span class="text-muted" style="font-size: 0.875rem; margin-left: 0.5rem;">({{ getCategoryName(len.category) }} - RM{{ Number(len.original_loan_amount).toLocaleString(undefined, {minimumFractionDigits:2}) }} @ {{ len.interest_rate || 0 }}%)</span>
               </template>
               <template v-else>
                 <input v-model="len.editName" type="text" class="form-input" style="padding: 0.25rem 0.5rem; flex: 1;" />
@@ -65,6 +66,7 @@
                   <option v-for="cat in activeCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                 </select>
                 <input v-model="len.editOriginalAmount" type="number" step="0.01" class="form-input" style="padding: 0.25rem 0.5rem; flex: 1;" placeholder="Amount" />
+                <input v-model="len.editInterestRate" type="number" step="0.01" class="form-input" style="padding: 0.25rem 0.5rem; flex: 1;" placeholder="Interest %" />
               </template>
               
               <span v-if="!len.is_active" class="text-danger" style="font-size: 0.75rem; border: 1px solid var(--danger); padding: 0.1rem 0.3rem; border-radius: 4px;">Archived</span>
@@ -96,6 +98,7 @@ const newCategoryName = ref('')
 const newLenderName = ref('')
 const newLenderCategoryId = ref('')
 const newLenderOriginalAmount = ref('')
+const newLenderInterestRate = ref('')
 const loading = ref({ cat: false, len: false })
 
 const activeCategories = computed(() => categories.value.filter(c => c.is_active))
@@ -116,7 +119,7 @@ const fetchCategories = async () => {
 const fetchLenders = async () => {
   try {
     const res = await api.get('/liabilities/lenders/')
-    lenders.value = res.data.map(l => ({ ...l, isEditing: false, editName: l.name, editCategoryId: l.category || '', editOriginalAmount: l.original_loan_amount || '' }))
+    lenders.value = res.data.map(l => ({ ...l, isEditing: false, editName: l.name, editCategoryId: l.category || '', editOriginalAmount: l.original_loan_amount || '', editInterestRate: l.interest_rate || '' }))
   } catch (e) { console.error(e) }
 }
 
@@ -137,11 +140,13 @@ const addLender = async () => {
     await api.post('/liabilities/lenders/', { 
       name: newLenderName.value,
       category: newLenderCategoryId.value,
-      original_loan_amount: newLenderOriginalAmount.value
+      original_loan_amount: newLenderOriginalAmount.value,
+      interest_rate: newLenderInterestRate.value || 0
     })
     newLenderName.value = ''
     newLenderCategoryId.value = ''
     newLenderOriginalAmount.value = ''
+    newLenderInterestRate.value = ''
     await fetchLenders()
   } catch (e) { console.error(e) } finally { loading.value.len = false }
 }
@@ -176,11 +181,13 @@ const saveLender = async (len) => {
     await api.patch(`/liabilities/lenders/${len.id}/`, { 
       name: len.editName,
       category: len.editCategoryId,
-      original_loan_amount: len.editOriginalAmount
+      original_loan_amount: len.editOriginalAmount,
+      interest_rate: len.editInterestRate || 0
     })
     len.name = len.editName
     len.category = len.editCategoryId
     len.original_loan_amount = len.editOriginalAmount
+    len.interest_rate = len.editInterestRate || 0
     len.isEditing = false
   } catch (e) { console.error(e) }
 }

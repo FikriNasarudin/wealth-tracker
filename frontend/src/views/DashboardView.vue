@@ -1,8 +1,12 @@
 <template>
   <div class="main-content">
-    <header id="tour-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
       <h1 style="font-weight: 600;">Dashboard</h1>
-      <div id="tour-period-selector" style="display: flex; gap: 1rem; align-items: center;">
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+          <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Help
+        </button>
         <span class="text-muted">Viewing Period:</span>
         <select v-model="selectedMonth" class="form-input" style="width: 120px;" @change="fetchData">
           <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
@@ -13,8 +17,18 @@
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
       <!-- Total Assets Card -->
-      <div id="tour-assets" class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Total Assets</div>
+      <div id="tour-liquid" class="card">
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
+          Liquid Assets
+          <Tooltip title="Liquid Assets" description="Money in bank accounts or cash that you can spend immediately." example="Savings account, physical cash" />
+        </div>
+        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-primary);">RM{{ formatCurrency(totalLiquidAssets) }}</div>
+      </div>
+      <div id="tour-invested" class="card">
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
+          Invested Assets
+          <Tooltip title="Invested Assets" description="The current value of your investments like stocks, bonds, or real estate." example="Stock portfolio, mutual funds" />
+        </div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(totalAssets) }}</div>
         <div class="text-success" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
           <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -26,7 +40,10 @@
 
       <!-- Total Liabilities Card -->
       <div id="tour-liabilities" class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Total Liabilities</div>
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
+          Total Liabilities
+          <Tooltip title="Total Liabilities" description="The total amount of debt you currently owe across all loans and credit cards." example="Car loan, mortgage" />
+        </div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(totalLiabilities) }}</div>
         <div class="text-warning" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
           <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -37,8 +54,11 @@
       </div>
 
       <!-- Net Worth Card -->
-      <div id="tour-networth" class="card" style="background: var(--accent-gradient); border: none;">
-        <div style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem; font-weight: 500;">Estimated Net Worth</div>
+      <div id="tour-net-worth" class="card" style="background: var(--accent-gradient); border: none;">
+        <div style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem; font-weight: 500;">
+          Estimated Net Worth
+          <Tooltip title="Estimated Net Worth" description="Your total wealth calculated by subtracting your debts from your assets." example="(Liquid + Invested) - Liabilities" />
+        </div>
         <div style="font-size: 2rem; font-weight: 700; color: #fff;">RM{{ formatCurrency(netWorth) }}</div>
         <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; margin-top: 0.5rem;">
           Assets - Liabilities
@@ -46,14 +66,26 @@
       </div>
     </div>
 
-    <div id="tour-charts" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+      <div id="tour-breakdown" class="card">
+        <h3 style="margin-bottom: 1rem; font-weight: 600;">Net Worth Breakdown</h3>
+        <div style="display: flex; justify-content: center; align-items: center; min-height: 250px;">
+          <PieChart 
+            :labels="['Liquid Assets', 'Invested Assets', 'Liabilities (Negative)']" 
+            :data="[totalLiquidAssets, totalAssets, totalLiabilities]"
+            :colors="['#3B82F6', '#10B981', '#EF4444']"
+          />
+        </div>
+      </div>
       <div class="card">
         <h3 style="margin-bottom: 1rem; font-weight: 600;">Compound Effect (Invested vs Profit)</h3>
         <div style="height: 300px;">
           <BarChart v-if="yearlyData.length > 0" :labels="monthlyLabels" :datasets="compoundDatasets" />
         </div>
       </div>
+    </div>
       
+    <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card">
         <h3 style="margin-bottom: 1rem; font-weight: 600;">Total Assets Over Time</h3>
         <div style="height: 300px;">
@@ -74,11 +106,26 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { driver } from 'driver.js'
-import 'driver.js/dist/driver.css'
 import api from '../services/api'
 import BarChart from '@/components/BarChart.vue'
 import GraphLine from '@/components/GraphLine.vue'
+import PieChart from '@/components/PieChart.vue'
+import Tooltip from '@/components/Tooltip.vue'
+import { driver } from 'driver.js'
+
+const startTour = () => {
+  const driverObj = driver({
+    showProgress: true,
+    steps: [
+      { element: '#tour-liquid', popover: { title: 'Liquid Assets', description: 'This is the total of your cash, checking, and savings accounts. It is money that you can access immediately.' } },
+      { element: '#tour-invested', popover: { title: 'Invested Assets', description: 'This represents the current value of your investments like stocks, bonds, or real estate.' } },
+      { element: '#tour-liabilities', popover: { title: 'Total Liabilities', description: 'This is the total amount of debt you currently owe across all loans and credit cards.' } },
+      { element: '#tour-net-worth', popover: { title: 'Estimated Net Worth', description: 'Your net worth is calculated by adding your liquid and invested assets, then subtracting your liabilities.' } },
+      { element: '#tour-breakdown', popover: { title: 'Net Worth Breakdown', description: 'This chart visually breaks down your wealth into liquid cash, investments, and debts.' } }
+    ]
+  });
+  driverObj.drive();
+}
 
 const d = new Date()
 const selectedMonth = ref(d.getMonth() + 1)
@@ -86,12 +133,13 @@ const selectedYear = ref(d.getFullYear())
 const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 const totalAssets = ref(0)
+const totalLiquidAssets = ref(0)
 const profitPercentage = ref(0)
 const totalLiabilities = ref(0)
 const yearlyData = ref([])
 
 const netWorth = computed(() => {
-  return totalAssets.value - totalLiabilities.value
+  return totalAssets.value + totalLiquidAssets.value - totalLiabilities.value
 })
 
 const formatCurrency = (val) => {
@@ -194,6 +242,41 @@ const fetchData = async () => {
   }
 
   try {
+    const bankRes = await api.get('/banking/snapshots/')
+    const currentY = Number(year)
+    const currentM = Number(month)
+    
+    const priorBankSnaps = bankRes.data.filter(s => {
+       const snapY = Number(s.year)
+       const snapM = Number(s.month)
+       if (snapY < currentY) return true;
+       if (snapY === currentY && snapM <= currentM) return true;
+       return false;
+    })
+    
+    const latestPerAccount = {}
+    priorBankSnaps.forEach(s => {
+      const key = s.account
+      if (!latestPerAccount[key]) {
+        latestPerAccount[key] = s
+      } else {
+        const existing = latestPerAccount[key]
+        if (s.year > existing.year || (s.year === existing.year && s.month > existing.month)) {
+          latestPerAccount[key] = s
+        }
+      }
+    })
+    
+    let liquidity = 0
+    Object.values(latestPerAccount).forEach(s => {
+      liquidity += parseFloat(s.balance || 0)
+    })
+    totalLiquidAssets.value = liquidity
+  } catch (e) {
+    console.error(e)
+  }
+
+  try {
     const res = await api.get('/assets/snapshots/')
     const yearSnaps = res.data.filter(s => s.year === year)
     
@@ -249,73 +332,5 @@ onMounted(async () => {
   }
 
   await fetchData()
-
-  // Initialize Tutorial if first time or explicitly requested
-  if (!localStorage.getItem('tutorial_completed') || window.location.search.includes('tutorial=1')) {
-    setTimeout(() => {
-      const driverObj = driver({
-        showProgress: true,
-        animate: true,
-        steps: [
-          {
-            element: '#tour-header',
-            popover: {
-              title: 'Welcome to Wealth Tracker! 🎉',
-              description: 'Let us take a quick tour of your new financial dashboard.',
-              side: 'bottom', align: 'start'
-            }
-          },
-          {
-            element: '#tour-period-selector',
-            popover: {
-              title: 'Time Travel',
-              description: 'Use this selector to view your exact financial snapshot for any month in history.',
-              side: 'bottom', align: 'end'
-            }
-          },
-          {
-            element: '#tour-assets',
-            popover: {
-              title: 'Your Assets',
-              description: 'This tracks your total portfolio balance and highlights your overall profit percentage across all accounts.',
-              side: 'bottom', align: 'start'
-            }
-          },
-          {
-            element: '#tour-liabilities',
-            popover: {
-              title: 'Your Liabilities',
-              description: 'All your outstanding debts (loans, mortgages) are aggregated here so you know exactly what you owe.',
-              side: 'bottom', align: 'center'
-            }
-          },
-          {
-            element: '#tour-networth',
-            popover: {
-              title: 'Estimated Net Worth',
-              description: 'The golden metric. This automatically subtracts your liabilities from your assets to show your true wealth.',
-              side: 'bottom', align: 'end'
-            }
-          },
-          {
-            element: '#tour-charts',
-            popover: {
-              title: 'Visual Insights',
-              description: 'Watch your wealth compound over time. These charts automatically build themselves as you log data each month!',
-              side: 'top', align: 'center'
-            }
-          }
-        ],
-        onDestroyStarted: () => {
-          localStorage.setItem('tutorial_completed', 'true')
-          if (window.location.search.includes('tutorial=1')) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-          driverObj.destroy();
-        }
-      })
-      driverObj.drive()
-    }, 500)
-  }
 })
 </script>

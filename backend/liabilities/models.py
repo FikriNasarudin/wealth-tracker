@@ -18,6 +18,7 @@ class Lender(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='lenders')
     category = models.ForeignKey(LiabilityCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='lenders')
     original_loan_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    interest_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 

@@ -6,6 +6,10 @@
         <p class="text-muted">Track your outstanding debts and loans.</p>
       </div>
       <div style="display: flex; gap: 1rem; align-items: center;">
+        <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+          <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Help
+        </button>
         <span class="text-muted">Period:</span>
         <select v-model="selectedMonth" class="form-input" style="width: 120px;" @change="handleFilterChange">
           <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
@@ -15,7 +19,7 @@
           <option value="">All Lenders</option>
           <option v-for="l in lenders" :key="l.id" :value="l.id">{{ l.name }}</option>
         </select>
-        <button class="btn btn-primary" @click="showModal = true" style="margin-left: 1rem;">+ Add Snapshot</button>
+        <button id="tour-add-liability" class="btn btn-primary" @click="showModal = true" style="margin-left: 1rem;">+ Add Snapshot</button>
       </div>
     </header>
 
@@ -30,8 +34,11 @@
           {{ Math.abs(originalChange).toFixed(2) }}% vs last month
         </div>
       </div>
-      <div class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Remaining Principal</div>
+      <div id="tour-remaining-principal" class="card">
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
+          Remaining Principal
+          <Tooltip title="Remaining Principal" description="The total amount of debt you still owe to your lenders, not including future interest." example="RM100,000 borrowed - RM20,000 paid = RM80,000 Remaining" />
+        </div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--danger);">RM{{ formatCurrency(totalRemaining) }}</div>
         <div v-if="remainingChange !== null" :class="remainingChange > 0 ? 'text-danger' : (remainingChange < 0 ? 'text-success' : 'text-muted')" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
           <svg v-if="remainingChange > 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
@@ -40,8 +47,11 @@
           {{ Math.abs(remainingChange).toFixed(2) }}% vs last month
         </div>
       </div>
-      <div class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Total Debt Reduced</div>
+      <div id="tour-debt-reduced" class="card">
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
+          Total Debt Reduced
+          <Tooltip title="Total Debt Reduced" description="The absolute amount of principal debt you have successfully paid off." example="RM100,000 Original - RM80,000 Remaining = RM20,000 Reduced" />
+        </div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--success);">RM{{ formatCurrency(totalReduced) }}</div>
         <div v-if="reducedChange !== null" :class="reducedChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
           <svg v-if="reducedChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
@@ -71,6 +81,33 @@
         <div v-if="distribution.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No liabilities recorded for this period.</div>
         <div v-else style="display: flex; justify-content: center; align-items: center; min-height: 250px;">
           <PieChart :labels="distribution.map(i => i.category)" :data="distribution.map(i => i.balance)" />
+        </div>
+      </div>
+
+      <div id="tour-payoff-tracker" class="card">
+        <h3 style="margin-bottom: 1rem; font-weight: 600;">
+          Debt Payoff Tracker
+          <Tooltip title="Debt Payoff Tracker" description="Uses the Avalanche Method to show you how many months remain to clear each debt based on your interest rates and monthly payments." example="High interest loans are prioritized." />
+        </h3>
+        <div v-if="payoffPlans.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No debt payoff plans available.</div>
+        <div v-else style="display: flex; flex-direction: column; gap: 1rem;">
+          <div v-for="plan in payoffPlans" :key="plan.id" style="border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span style="font-weight: 600;">{{ plan.lenderName }} ({{ plan.interestRate }}%)</span>
+              <span class="text-muted">Est. {{ plan.monthsRemaining }} months left</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+              <span>Balance: RM{{ formatCurrency(plan.remainingPrincipal) }}</span>
+              <span>Payment: RM{{ formatCurrency(plan.monthlyPayment) }}/mo</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: var(--bg-background); border-radius: 4px; overflow: hidden;">
+              <div :style="{
+                width: Math.min((1 - plan.remainingPrincipal / plan.originalAmount) * 100, 100) + '%',
+                height: '100%',
+                background: 'var(--success)'
+              }"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -119,12 +156,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import PieChart from '@/components/PieChart.vue'
-import GraphLine from '@/components/GraphLine.vue'
 import BarChart from '@/components/BarChart.vue'
+import GraphLine from '@/components/GraphLine.vue'
+import Tooltip from '@/components/Tooltip.vue'
+import { driver } from 'driver.js'
+
+const startTour = () => {
+  const driverObj = driver({
+    showProgress: true,
+    steps: [
+      { element: '#tour-remaining-principal', popover: { title: 'Remaining Debt', description: 'Monitor how much money you currently owe across all accounts.' } },
+      { element: '#tour-debt-reduced', popover: { title: 'Debt Paid Off', description: 'Celebrate your progress! This is the total amount of debt you have cleared.' } },
+      { element: '#tour-payoff-tracker', popover: { title: 'Avalanche Payoff Tracker', description: 'Automatically estimates how many months are left on your loans based on your interest rate and payments.' } },
+      { element: '#tour-add-liability', popover: { title: 'Log a Payment', description: 'Click here to add a new snapshot for a month after making a payment.' } }
+    ]
+  });
+  driverObj.drive();
+}
 
 const totalOriginal = ref(0)
 const totalRemaining = ref(0)
@@ -134,6 +186,7 @@ const prevTotalRemaining = ref(0)
 const prevTotalReduced = ref(0)
 const distribution = ref([])
 const yearlyData = ref([])
+const payoffPlans = ref([])
 
 const calculateChange = (current, previous) => {
   if (!previous) return null;
@@ -271,6 +324,63 @@ const fetchData = async () => {
     } else {
       yearlyData.value = aggregated
     }
+
+    // Calculate Payoff Plans for selected month
+    const currentPriorSnaps = allSnaps.filter(s => {
+       const snapY = Number(s.year)
+       const snapM = Number(s.month)
+       if (snapY < selectedYear.value) return true;
+       if (snapY === selectedYear.value && snapM <= selectedMonth.value) return true;
+       return false;
+    })
+    
+    const latestPerLiabilitySelected = {}
+    currentPriorSnaps.forEach(s => {
+      const key = `${s.category}_${s.lender}`
+      if (!latestPerLiabilitySelected[key]) {
+        latestPerLiabilitySelected[key] = s
+      } else {
+        const existing = latestPerLiabilitySelected[key]
+        if (s.year > existing.year || (s.year === existing.year && s.month > existing.month)) {
+          latestPerLiabilitySelected[key] = s
+        }
+      }
+    })
+    
+    payoffPlans.value = Object.values(latestPerLiabilitySelected)
+      .filter(s => parseFloat(s.remaining_principal) > 0)
+      .map(s => {
+        const lender = lenders.value.find(l => l.id === s.lender)
+        const interestRate = lender ? parseFloat(lender.interest_rate || 0) : 0
+        const principal = parseFloat(s.remaining_principal)
+        const payment = parseFloat(s.monthly_payment)
+        const original = parseFloat(s.original_loan_amount)
+        
+        let months = 0
+        if (payment > 0) {
+          if (interestRate === 0) {
+            months = Math.ceil(principal / payment)
+          } else {
+            const r = interestRate / 100 / 12
+            if (payment > r * principal) {
+              months = Math.ceil(-Math.log(1 - (r * principal) / payment) / Math.log(1 + r))
+            } else {
+              months = 999 
+            }
+          }
+        }
+        
+        return {
+          id: s.id,
+          lenderName: lender ? lender.name : 'Unknown',
+          interestRate,
+          remainingPrincipal: principal,
+          originalAmount: original,
+          monthlyPayment: payment,
+          monthsRemaining: months > 900 ? '∞' : months
+        }
+      }).sort((a, b) => b.interestRate - a.interestRate)
+
   } catch (e) {
     console.error(e)
   }
@@ -346,7 +456,7 @@ onMounted(async () => {
     console.error(e)
   }
 
-  await fetchData()
   await fetchOptions()
+  await fetchData()
 })
 </script>

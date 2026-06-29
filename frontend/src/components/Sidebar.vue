@@ -7,6 +7,28 @@
     <nav class="sidebar-nav">
       <router-link to="/" class="nav-item">Dashboard</router-link>
 
+      <!-- Goals Menu -->
+      <div class="menu-group">
+        <button class="nav-item menu-toggle" @click="toggleMenu('goals')" :class="{ active: openMenus.goals || isActivePrefix('/goals') }">
+          <span>Financial Goals</span>
+          <span class="chevron" :class="{ open: openMenus.goals }">▼</span>
+        </button>
+        <div class="submenu" v-show="openMenus.goals">
+          <router-link to="/goals" class="submenu-item" exact-active-class="active">Overview</router-link>
+        </div>
+      </div>
+
+      <!-- Banking Menu -->
+      <div class="menu-group">
+        <button class="nav-item menu-toggle" @click="toggleMenu('banking')" :class="{ active: openMenus.banking || isActivePrefix('/banking') }">
+          <span>Banking & Cash</span>
+          <span class="chevron" :class="{ open: openMenus.banking }">▼</span>
+        </button>
+        <div class="submenu" v-show="openMenus.banking">
+          <router-link to="/banking" class="submenu-item" exact-active-class="active">Accounts</router-link>
+        </div>
+      </div>
+
       <!-- Budgeting Menu -->
       <div class="menu-group">
         <button class="nav-item menu-toggle" @click="toggleMenu('budgeting')" :class="{ active: openMenus.budgeting || isActivePrefix('/budgeting') }">
@@ -44,10 +66,8 @@
           <router-link to="/liabilities/manage" class="submenu-item" active-class="active">Manage</router-link>
         </div>
       </div>
-
     </nav>
     <div class="sidebar-footer">
-      <button class="btn btn-secondary" style="width: 100%; margin-bottom: 0.5rem;" @click="replayTutorial">Help / Tutorial</button>
       <button class="btn btn-danger" style="width: 100%" @click="logout">Logout</button>
     </div>
   </aside>
@@ -70,6 +90,8 @@ const router = useRouter()
 const route = useRoute()
 
 const openMenus = ref({
+  goals: false,
+  banking: false,
   budgeting: false,
   assets: false,
   liabilities: false
@@ -87,6 +109,8 @@ const isActivePrefix = (prefix) => {
 watch(
   () => route.path,
   (newPath) => {
+    if (newPath.startsWith('/goals')) openMenus.value.goals = true
+    if (newPath.startsWith('/banking')) openMenus.value.banking = true
     if (newPath.startsWith('/budgeting')) openMenus.value.budgeting = true
     if (newPath.startsWith('/assets')) openMenus.value.assets = true
     if (newPath.startsWith('/liabilities')) openMenus.value.liabilities = true
@@ -94,14 +118,7 @@ watch(
   { immediate: true }
 )
 
-const replayTutorial = () => {
-  localStorage.removeItem('tutorial_completed')
-  if (route.path === '/') {
-    window.location.search = '?tutorial=1'
-  } else {
-    router.push('/?tutorial=1')
-  }
-}
+
 
 const logout = () => {
   localStorage.removeItem('access_token')

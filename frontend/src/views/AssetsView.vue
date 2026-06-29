@@ -6,6 +6,10 @@
         <p class="text-muted">Track your portfolio allocation and profits.</p>
       </div>
       <div style="display: flex; gap: 1rem; align-items: center;">
+        <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+          <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Help
+        </button>
         <span class="text-muted">Period:</span>
         <select v-model="selectedMonth" class="form-input" style="width: 120px;" @change="handleFilterChange">
           <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
@@ -15,13 +19,16 @@
           <option value="">All Platforms</option>
           <option v-for="p in platforms" :key="p.id" :value="p.id">{{ p.name }}</option>
         </select>
-        <button class="btn btn-primary" @click="showModal = true" style="margin-left: 1rem;">+ Add Snapshot</button>
+        <button id="tour-add-asset" class="btn btn-primary" @click="showModal = true" style="margin-left: 1rem;">+ Add Snapshot</button>
       </div>
     </header>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div id="tour-asset-metrics" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Total Invested</div>
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
+          Total Invested
+          <Tooltip title="Total Invested" description="The principal amount of money you have actually put into your investments." example="RM10,000 deposited to a broker" />
+        </div>
         <div style="font-size: 2rem; font-weight: 700;">RM{{ formatCurrency(totalInvested) }}</div>
         <div v-if="investedChange !== null" :class="investedChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
           <svg v-if="investedChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
@@ -39,7 +46,10 @@
         </div>
       </div>
       <div class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Absolute Profit</div>
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
+          Absolute Profit
+          <Tooltip title="Absolute Profit" description="The raw monetary difference between your current balance and total invested." example="RM12,000 Balance - RM10,000 Invested = RM2,000 Profit" />
+        </div>
         <div style="font-size: 2rem; font-weight: 700;" :class="absoluteProfit >= 0 ? 'text-success' : 'text-danger'">RM{{ formatCurrency(absoluteProfit) }}</div>
         <div v-if="profitChange !== null" :class="profitChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
           <svg v-if="profitChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
@@ -48,7 +58,10 @@
         </div>
       </div>
       <div class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Profit Percentage</div>
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
+          Profit Percentage
+          <Tooltip title="Profit Percentage" description="Your absolute profit expressed as a percentage of your total invested amount." example="(2,000 / 10,000) * 100 = 20%" />
+        </div>
         <div style="font-size: 2rem; font-weight: 700;" :class="profitPercentage >= 0 ? 'text-success' : 'text-danger'">{{ profitPercentage }}%</div>
         <div v-if="percentageChange !== null" :class="percentageChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
           <svg v-if="percentageChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
@@ -58,7 +71,7 @@
       </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <div id="tour-asset-charts" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card">
         <h3 style="margin-bottom: 1rem; font-weight: 600;">By Category</h3>
         <div v-if="byCategory.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No data available</div>
@@ -146,6 +159,20 @@ import Modal from '@/components/Modal.vue'
 import PieChart from '@/components/PieChart.vue'
 import BarChart from '@/components/BarChart.vue'
 import GraphLine from '@/components/GraphLine.vue'
+import Tooltip from '@/components/Tooltip.vue'
+import { driver } from 'driver.js'
+
+const startTour = () => {
+  const driverObj = driver({
+    showProgress: true,
+    steps: [
+      { element: '#tour-asset-metrics', popover: { title: 'Asset Metrics', description: 'See your principal invested vs your current balance to determine your real profits.' } },
+      { element: '#tour-asset-charts', popover: { title: 'Portfolio Allocation', description: 'View exactly how your investments are distributed across different asset classes and platforms.' } },
+      { element: '#tour-add-asset', popover: { title: 'Add Snapshot', description: 'Log your monthly investment performance here to build up your historical charts.' } }
+    ]
+  });
+  driverObj.drive();
+}
 
 const totalInvested = ref(0)
 const totalBalance = ref(0)
