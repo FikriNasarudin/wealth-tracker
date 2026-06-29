@@ -19,5 +19,5 @@ COPY . .
 
 EXPOSE 8000
 
-# Run migrations automatically before starting the server
-CMD sh -c "python manage.py migrate && gunicorn --bind 0.0.0.0:8000 config.wsgi:application"
+# Run auto-alignment and migrations automatically before starting the server
+CMD sh -c "python align_schema.py && python manage.py migrate && gunicorn --bind 0.0.0.0:8000 config.wsgi:application"
