@@ -1,9 +1,10 @@
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from django.db.models import Sum, F
-from decimal import Decimal
 from django.db.models.query_utils import Q
+from decimal import Decimal
 from .models import TransactionCategory, Transaction, BudgetTarget, Subscription
 from .serializers import TransactionCategorySerializer, TransactionSerializer, BudgetTargetSerializer, SubscriptionSerializer
 
@@ -17,6 +18,16 @@ class TransactionCategoryViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    def perform_update(self, serializer):
+        if serializer.instance.is_default:
+            raise ValidationError("Cannot modify default categories.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.is_default:
+            raise ValidationError("Cannot delete default categories.")
+        instance.delete()
+
 class BudgetTargetViewSet(viewsets.ModelViewSet):
     serializer_class = BudgetTargetSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -27,6 +38,42 @@ class BudgetTargetViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @action(detail=True, methods=['post'])
+    def pause_month(self, request, pk=None):
+        target = self.get_object()
+        month_str = request.data.get('month')
+        if not month_str:
+            return Response({'error': 'month required'}, status=400)
+        
+        paused = target.paused_months or []
+        if month_str not in paused:
+            paused.append(month_str)
+            target.paused_months = paused
+            target.save()
+        return Response({'status': 'paused', 'paused_months': paused})
+
+    @action(detail=True, methods=['post'])
+    def resume_month(self, request, pk=None):
+        target = self.get_object()
+        month_str = request.data.get('month')
+        if not month_str:
+            return Response({'error': 'month required'}, status=400)
+        
+        paused = target.paused_months or []
+        if month_str in paused:
+            paused.remove(month_str)
+            target.paused_months = paused
+            target.save()
+        return Response({'status': 'resumed', 'paused_months': paused})
+        
+    @action(detail=True, methods=['post'])
+    def archive(self, request, pk=None):
+        target = self.get_object()
+        target.status = 'ARCHIVED'
+        target.save()
+        return Response({'status': 'archived'})
+
+
 class SubscriptionViewSet(viewsets.ModelViewSet):
     serializer_class = SubscriptionSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -36,6 +83,69 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def log_month(self, request, pk=None):
+        import datetime
+        subscription = self.get_object()
+        month_str = request.data.get('month')
+        if not month_str:
+            return Response({'error': 'month required'}, status=400)
+            
+        y_str, m_str = month_str.split('-')
+        year, month = int(y_str), int(m_str)
+        
+        dt = datetime.date(year, month, 1)
+        if Transaction.objects.filter(subscription=subscription, date__year=year, date__month=month).exists():
+            return Response({'error': 'Already logged'}, status=400)
+            
+        txn = Transaction.objects.create(
+            user=request.user,
+            category=subscription.category,
+            name=subscription.name,
+            type=subscription.type,
+            subscription=subscription,
+            amount=subscription.amount,
+            date=dt,
+            description=f"{subscription.name} (Recurring)" + (f" - Account: {subscription.payment_account}" if subscription.payment_account else "")
+        )
+        return Response({'status': 'logged', 'transaction_id': txn.id})
+
+    @action(detail=True, methods=['post'])
+    def pause_month(self, request, pk=None):
+        subscription = self.get_object()
+        month_str = request.data.get('month')
+        if not month_str:
+            return Response({'error': 'month required'}, status=400)
+        
+        paused = subscription.paused_months or []
+        if month_str not in paused:
+            paused.append(month_str)
+            subscription.paused_months = paused
+            subscription.save()
+        return Response({'status': 'paused', 'paused_months': paused})
+
+    @action(detail=True, methods=['post'])
+    def resume_month(self, request, pk=None):
+        subscription = self.get_object()
+        month_str = request.data.get('month')
+        if not month_str:
+            return Response({'error': 'month required'}, status=400)
+        
+        paused = subscription.paused_months or []
+        if month_str in paused:
+            paused.remove(month_str)
+            subscription.paused_months = paused
+            subscription.save()
+        return Response({'status': 'resumed', 'paused_months': paused})
+        
+    @action(detail=True, methods=['post'])
+    def archive(self, request, pk=None):
+        subscription = self.get_object()
+        subscription.status = 'ARCHIVED'
+        subscription.save()
+        return Response({'status': 'archived'})
+
 
 class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
@@ -52,60 +162,200 @@ class TransactionViewSet(viewsets.ModelViewSet):
         month = request.query_params.get('month')
         year = request.query_params.get('year')
         
+        if month and year:
+            import datetime
+            import calendar
+            
+            req_y = int(year)
+            req_m = int(month)
+            month_str = f"{req_y}-{req_m:02d}"
+            today = datetime.date.today()
+            
+            period_start = datetime.date(req_y, req_m, 1)
+            days_in_month = calendar.monthrange(req_y, req_m)[1]
+            period_end = datetime.date(req_y, req_m, days_in_month)
+            
+            subs = Subscription.objects.filter(user=request.user, status='ACTIVE', auto_log_day__isnull=False)
+            for s in subs:
+                should_log = False
+                if req_y < today.year or (req_y == today.year and req_m < today.month):
+                    should_log = True
+                elif req_y == today.year and req_m == today.month and today.day >= s.auto_log_day:
+                    should_log = True
+                    
+                if should_log:
+                    if month_str not in (s.paused_months or []):
+                        if not (s.start_date and s.start_date > period_end):
+                            if not (s.end_date and s.end_date < period_start):
+                                logged = Transaction.objects.filter(
+                                    user=request.user, 
+                                    subscription=s,
+                                    date__year=req_y,
+                                    date__month=req_m
+                                ).exists()
+                                if not logged:
+                                    log_day = min(s.auto_log_day, days_in_month)
+                                    Transaction.objects.create(
+                                        user=request.user,
+                                        category=s.category,
+                                        name=s.name,
+                                        type=s.type,
+                                        subscription=s,
+                                        amount=s.amount,
+                                        date=datetime.date(req_y, req_m, log_day),
+                                        description=f"Auto-logged: {s.name}" + (f" (Account: {s.payment_account})" if s.payment_account else "")
+                                    )
+
         qs = self.get_queryset()
         if month and year:
             qs = qs.filter(date__month=month, date__year=year)
             
-        income = qs.filter(category__type='INCOME').aggregate(total=Sum('amount'))['total'] or 0
-        expenses = qs.filter(category__type='EXPENSE').aggregate(total=Sum('amount'))['total'] or 0
+        income = qs.filter(type='INCOME').aggregate(total=Sum('amount'))['total'] or 0
+        expenses = qs.filter(type='EXPENSE').aggregate(total=Sum('amount'))['total'] or 0
         
-        # Aggregate income and expenses by category
-        expenses_qs = qs.filter(category__type='EXPENSE').values(
+        # Aggregate income and expenses by Category for overview
+        expenses_qs = qs.filter(type='EXPENSE').values(
             'category_id',
-            name=F('category__name')
+            cat_name=F('category__name')
         ).annotate(total=Sum('amount'))
         
-        income_qs = qs.filter(category__type='INCOME').values(
+        income_qs = qs.filter(type='INCOME').values(
             'category_id',
-            name=F('category__name')
+            cat_name=F('category__name')
         ).annotate(total=Sum('amount'))
         
         targets_qs = BudgetTarget.objects.filter(user=request.user).select_related('category')
-        targets = {t.category_id: t.amount for t in targets_qs}
         
-        forecast_income = sum(t.amount for t in targets_qs if t.category.type == 'INCOME')
-        forecast_expenses = sum(t.amount for t in targets_qs if t.category.type == 'EXPENSE')
+        active_targets = []
+        for t in targets_qs:
+            if t.status == 'ARCHIVED':
+                continue
+            if month and year:
+                y_int = int(year)
+                m_int = int(month)
+                month_str = f"{y_int}-{m_int:02d}"
+                
+                import datetime
+                import calendar
+                period_start = datetime.date(y_int, m_int, 1)
+                days_in_month = calendar.monthrange(y_int, m_int)[1]
+                period_end = datetime.date(y_int, m_int, days_in_month)
+                
+                if month_str in (t.paused_months or []):
+                    continue
+                if t.start_date and t.start_date > period_end:
+                    continue
+                if t.end_date and t.end_date < period_start:
+                    continue
+            active_targets.append(t)
+            
+        # Target limit dictionaries
+        category_targets = {t.category_id: t.amount for t in active_targets if t.category_id}
+        name_targets = {t.name.lower(): t.amount for t in active_targets if t.name}
+        
+        forecast_income = sum(t.amount for t in active_targets if t.type == 'INCOME')
+        forecast_expenses = sum(t.amount for t in active_targets if t.type == 'EXPENSE')
 
         expense_breakdown = []
         for e in expenses_qs:
             weight = (e['total'] / expenses * 100) if expenses > 0 else 0
+            cname = e['cat_name'] or 'Uncategorized'
             expense_breakdown.append({
                 'category_id': e['category_id'],
-                'category': e['name'],
+                'category': cname,
                 'amount': e['total'],
                 'weight_percentage': round(weight, 2),
-                'budget_limit': targets.get(e['category_id'])
+                'budget_limit': category_targets.get(e['category_id'])
             })
             
         income_breakdown = []
         for inc in income_qs:
             weight = (inc['total'] / income * 100) if income > 0 else 0
+            cname = inc['cat_name'] or 'Uncategorized'
             income_breakdown.append({
                 'category_id': inc['category_id'],
-                'category': inc['name'],
+                'category': cname,
                 'amount': inc['total'],
                 'weight_percentage': round(weight, 2),
-                'budget_limit': targets.get(inc['category_id'])
+                'budget_limit': category_targets.get(inc['category_id'])
             })
             
         recent_transactions = TransactionSerializer(
             qs.order_by('-date', '-id')[:5], many=True
         ).data
 
-        subs = Subscription.objects.filter(user=request.user, is_active=True)
-        total_monthly_subs = sum((s.amount for s in subs if s.billing_cycle == 'MONTHLY'), Decimal('0.00'))
-        total_yearly_subs = sum((s.amount for s in subs if s.billing_cycle == 'YEARLY'), Decimal('0.00'))
-        monthly_fixed_costs = total_monthly_subs + (total_yearly_subs / Decimal('12.0'))
+        subs = Subscription.objects.filter(user=request.user, status='ACTIVE').select_related('category')
+        monthly_fixed_costs = Decimal('0.00')
+        monthly_fixed_income = Decimal('0.00')
+        logged_sub_ids = set()
+
+        if month and year:
+            import datetime
+            import calendar
+            
+            y_int = int(year)
+            m_int = int(month)
+            month_str = f"{y_int}-{m_int:02d}"
+            
+            period_start = datetime.date(y_int, m_int, 1)
+            days_in_month = calendar.monthrange(y_int, m_int)[1]
+            period_end = datetime.date(y_int, m_int, days_in_month)
+
+            logged_sub_ids = set(Transaction.objects.filter(
+                user=request.user, 
+                subscription__isnull=False, 
+                date__year=y_int, 
+                date__month=m_int
+            ).values_list('subscription_id', flat=True))
+            
+            active_subs = []
+            for s in subs:
+                paused = s.paused_months or []
+                if s.id in logged_sub_ids or month_str in paused:
+                    continue
+                
+                if s.start_date and s.start_date > period_end:
+                    continue
+                if s.end_date and s.end_date < period_start:
+                    continue
+                    
+                active_subs.append(s)
+            subs = active_subs
+
+        for s in subs:
+            monthly_amt = s.amount if s.billing_cycle == 'MONTHLY' else s.amount / Decimal('12.0')
+            if s.type == 'INCOME':
+                monthly_fixed_income += monthly_amt
+                income += monthly_amt
+                
+                found = False
+                for b in income_breakdown:
+                    if b['category_id'] == s.category_id:
+                        b['amount'] += monthly_amt
+                        found = True
+                        break
+                if not found:
+                    cname = s.category.name if s.category else 'Uncategorized'
+                    income_breakdown.append({'category_id': s.category_id, 'category': cname, 'amount': monthly_amt, 'budget_limit': category_targets.get(s.category_id)})
+            else:
+                monthly_fixed_costs += monthly_amt
+                expenses += monthly_amt
+                
+                found = False
+                for b in expense_breakdown:
+                    if b['category_id'] == s.category_id:
+                        b['amount'] += monthly_amt
+                        found = True
+                        break
+                if not found:
+                    cname = s.category.name if s.category else 'Uncategorized'
+                    expense_breakdown.append({'category_id': s.category_id, 'category': cname, 'amount': monthly_amt, 'budget_limit': category_targets.get(s.category_id)})
+
+        # Re-calculate weights
+        for b in income_breakdown:
+            b['weight_percentage'] = round((b['amount'] / income * 100) if income > 0 else 0, 2)
+        for b in expense_breakdown:
+            b['weight_percentage'] = round((b['amount'] / expenses * 100) if expenses > 0 else 0, 2)
 
         return Response({
             'total_income': income,
@@ -113,10 +363,13 @@ class TransactionViewSet(viewsets.ModelViewSet):
             'forecast_income': forecast_income,
             'forecast_expenses': forecast_expenses,
             'monthly_fixed_costs': monthly_fixed_costs,
+            'monthly_fixed_income': monthly_fixed_income,
             'net_cash_flow': income - expenses,
             'expense_breakdown': expense_breakdown,
             'income_breakdown': income_breakdown,
-            'recent_transactions': recent_transactions
+            'recent_transactions': recent_transactions,
+            'logged_subscription_ids': list(logged_sub_ids),
+            'targets': BudgetTargetSerializer(active_targets, many=True).data
         })
 
     @action(detail=False, methods=['get'])
@@ -133,18 +386,56 @@ class TransactionViewSet(viewsets.ModelViewSet):
         
         trend_data = {}
         curr = start_date
+        months_list = []
         for _ in range(6):
             key = curr.strftime('%b %Y')
-            trend_data[key] = {'income': 0, 'expense': 0, 'label': key}
+            month_key = curr.strftime('%Y-%m')
+            
+            period_start = curr
             days_in_month = calendar.monthrange(curr.year, curr.month)[1]
+            period_end = curr.replace(day=days_in_month)
+            
+            trend_data[key] = {
+                'income': 0, 'expense': 0, 'label': key, 
+                '_year': curr.year, '_month': curr.month, 
+                '_start': period_start, '_end': period_end, '_month_key': month_key
+            }
+            months_list.append(key)
             curr += datetime.timedelta(days=days_in_month)
 
         for txn in qs:
             key = txn.date.strftime('%b %Y')
             if key in trend_data:
-                if txn.category and txn.category.type == 'INCOME':
+                if txn.type == 'INCOME':
                     trend_data[key]['income'] += txn.amount
-                elif txn.category and txn.category.type == 'EXPENSE':
+                elif txn.type == 'EXPENSE':
                     trend_data[key]['expense'] += txn.amount
+
+        subs = Subscription.objects.filter(user=request.user, status='ACTIVE')
+        for key in months_list:
+            m_data = trend_data[key]
+            
+            logged_sub_ids = set(Transaction.objects.filter(
+                user=request.user, 
+                subscription__isnull=False, 
+                date__year=m_data['_year'], 
+                date__month=m_data['_month']
+            ).values_list('subscription_id', flat=True))
+            
+            for s in subs:
+                if s.id in logged_sub_ids or m_data['_month_key'] in (s.paused_months or []):
+                    continue
+                if s.start_date and s.start_date > m_data['_end']:
+                    continue
+                if s.end_date and s.end_date < m_data['_start']:
+                    continue
+                    
+                monthly_amt = s.amount if s.billing_cycle == 'MONTHLY' else s.amount / Decimal('12.0')
+                if s.type == 'INCOME':
+                    m_data['income'] += monthly_amt
+                else:
+                    m_data['expense'] += monthly_amt
+                    
+            del m_data['_year'], m_data['_month'], m_data['_start'], m_data['_end'], m_data['_month_key']
 
         return Response(list(trend_data.values()))

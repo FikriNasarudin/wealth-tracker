@@ -39,15 +39,15 @@
 
       <!-- Lenders Section -->
       <div class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Lenders</h3>
+        <h3 style="margin-bottom: 1rem; font-weight: 600;">Lenders / Credit Cards</h3>
         <form @submit.prevent="addLender" class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
           <div style="display: flex; gap: 0.5rem;">
-            <input v-model="newLenderName" type="text" class="form-input" placeholder="New Lender Name" required style="flex: 1" />
+            <input v-model="newLenderName" type="text" class="form-input" placeholder="Lender / Card Name" required style="flex: 1" />
             <select v-model="newLenderCategoryId" class="form-input" style="flex: 1" required>
               <option value="" disabled>Select Category</option>
               <option v-for="cat in activeCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
             </select>
-            <input v-model="newLenderOriginalAmount" type="number" step="0.01" class="form-input" placeholder="Original Amount" required style="flex: 1" />
+            <input v-model="newLenderOriginalAmount" type="number" step="0.01" class="form-input" placeholder="Loan Amount / Credit Limit" required style="flex: 1" />
             <input v-model="newLenderInterestRate" type="number" step="0.01" class="form-input" placeholder="Interest Rate (%)" style="flex: 1" />
             <button type="submit" class="btn btn-primary" :disabled="loading.len">Add</button>
           </div>

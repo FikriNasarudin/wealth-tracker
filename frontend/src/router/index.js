@@ -32,6 +32,18 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/budgeting/recurring',
+      name: 'budgeting-recurring',
+      component: () => import('../views/ManageRecurringView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/budgeting/targets',
+      name: 'budgeting-targets',
+      component: () => import('../views/ManageTargetsView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/budgeting/history',
       name: 'budgeting-history',
       component: () => import('../views/BudgetingHistoryView.vue'),
@@ -65,6 +77,12 @@ const router = createRouter({
       path: '/liabilities/history',
       name: 'liabilities-history',
       component: () => import('../views/LiabilitiesHistoryView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/liabilities/credit-cards',
+      name: 'credit-cards',
+      component: () => import('../views/ManageCreditCardsView.vue'),
       meta: { requiresAuth: true }
     },
     {

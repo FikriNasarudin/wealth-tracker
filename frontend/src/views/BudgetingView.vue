@@ -59,11 +59,6 @@
           <span v-if="forecastIncome > 0 || forecastExpenses > 0">Target: RM{{ formatCurrency(forecastIncome - forecastExpenses) }}</span>
         </div>
         <div style="font-size: 2rem; font-weight: 700;" :class="netCashFlow >= 0 ? 'text-success' : 'text-danger'">RM{{ formatCurrency(netCashFlow) }}</div>
-        <div v-if="monthlyFixedCosts > 0" style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-muted);">
-          True Disposable: 
-          <span :class="(netCashFlow - monthlyFixedCosts) >= 0 ? 'text-success' : 'text-danger'">RM{{ formatCurrency(netCashFlow - monthlyFixedCosts) }}</span>
-          <Tooltip title="True Disposable Income" description="Your net cash flow minus all of your active fixed subscriptions for the month. This is your true spending power." example="RM2,000 Net Cash Flow - RM500 Subscriptions = RM1,500 True Disposable" />
-        </div>
       </div>
     </div>
 
@@ -78,22 +73,21 @@
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
           <h3 style="font-weight: 600; margin: 0;">Category Targets</h3>
-          <div style="display: flex; gap: 0.5rem; background: var(--bg-background); padding: 0.25rem; border-radius: 0.5rem;">
-            <button class="btn" :class="activeTab === 'EXPENSE' ? 'btn-primary' : 'btn-secondary'" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="activeTab = 'EXPENSE'">Expenses</button>
-            <button class="btn" :class="activeTab === 'INCOME' ? 'btn-primary' : 'btn-secondary'" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="activeTab = 'INCOME'">Income</button>
-          </div>
+          <router-link to="/budgeting/targets" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Manage Targets</router-link>
+        </div>
+        
+        <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; background: var(--bg-background); padding: 0.25rem; border-radius: 0.5rem; width: max-content;">
+          <button class="btn" :class="activeTab === 'EXPENSE' ? 'btn-primary' : 'btn-secondary'" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="activeTab = 'EXPENSE'">Expenses</button>
+          <button class="btn" :class="activeTab === 'INCOME' ? 'btn-primary' : 'btn-secondary'" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="activeTab = 'INCOME'">Income</button>
         </div>
 
         <div v-if="activeTab === 'EXPENSE'">
           <div v-if="expenseBreakdown.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No expenses recorded for this month.</div>
           <div v-else style="display: flex; flex-direction: column; gap: 1rem; max-height: 250px; overflow-y: auto; padding-right: 0.5rem;">
-            <div v-for="item in expenseBreakdown" :key="item.category_id" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div v-for="item in expenseBreakdown" :key="item.category_id || 'uncat'" style="display: flex; flex-direction: column; gap: 0.5rem;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-weight: 500;">{{ item.category }} ({{ item.weight_percentage }}%)</span>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <span class="text-muted">RM{{ formatCurrency(item.amount) }} <span v-if="item.budget_limit">/ RM{{ formatCurrency(item.budget_limit) }}</span></span>
-                  <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="openBudgetModal(item.category_id, item.budget_limit)">✎</button>
-                </div>
+                <span class="text-muted">RM{{ formatCurrency(item.amount) }} <span v-if="item.budget_limit">/ RM{{ formatCurrency(item.budget_limit) }}</span></span>
               </div>
               <div style="width: 100%; height: 8px; background: var(--bg-background); border-radius: 4px; overflow: hidden;">
                 <div :style="{
@@ -109,13 +103,10 @@
         <div v-if="activeTab === 'INCOME'">
           <div v-if="incomeBreakdown.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No income recorded for this month.</div>
           <div v-else style="display: flex; flex-direction: column; gap: 1rem; max-height: 250px; overflow-y: auto; padding-right: 0.5rem;">
-            <div v-for="item in incomeBreakdown" :key="item.category_id" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div v-for="item in incomeBreakdown" :key="item.category_id || 'uncat'" style="display: flex; flex-direction: column; gap: 0.5rem;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-weight: 500;">{{ item.category }} ({{ item.weight_percentage }}%)</span>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <span class="text-muted">RM{{ formatCurrency(item.amount) }} <span v-if="item.budget_limit">/ RM{{ formatCurrency(item.budget_limit) }}</span></span>
-                  <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="openBudgetModal(item.category_id, item.budget_limit)">✎</button>
-                </div>
+                <span class="text-muted">RM{{ formatCurrency(item.amount) }} <span v-if="item.budget_limit">/ RM{{ formatCurrency(item.budget_limit) }}</span></span>
               </div>
               <div style="width: 100%; height: 8px; background: var(--bg-background); border-radius: 4px; overflow: hidden;">
                 <div :style="{
@@ -138,7 +129,7 @@
             <tr style="border-bottom: 1px solid var(--border-color);">
               <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Date</th>
               <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Category</th>
-              <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Description</th>
+              <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Name</th>
               <th style="padding: 0.75rem 0; text-align: right; color: var(--text-muted); font-weight: 500;">Amount</th>
             </tr>
           </thead>
@@ -148,10 +139,10 @@
             </tr>
             <tr v-for="txn in recentTransactions" :key="txn.id" style="border-bottom: 1px solid var(--border-color);">
               <td style="padding: 0.75rem 0;">{{ txn.date }}</td>
-              <td style="padding: 0.75rem 0;">{{ txn.category_name }}</td>
-              <td style="padding: 0.75rem 0; color: var(--text-muted);">{{ txn.description || '-' }}</td>
-              <td style="padding: 0.75rem 0; text-align: right;" :class="txn.category_type === 'INCOME' ? 'text-success' : 'text-danger'">
-                {{ txn.category_type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(txn.amount) }}
+              <td style="padding: 0.75rem 0; color: var(--text-muted);">{{ txn.category_name || 'Uncategorized' }}</td>
+              <td style="padding: 0.75rem 0; font-weight: 500;">{{ txn.name }}</td>
+              <td style="padding: 0.75rem 0; text-align: right;" :class="txn.type === 'INCOME' ? 'text-success' : 'text-danger'">
+                {{ txn.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(txn.amount) }}
               </td>
             </tr>
           </tbody>
@@ -161,24 +152,33 @@
       <div id="tour-subscriptions" class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
           <h3 style="font-weight: 600; margin: 0;">
-            Subscriptions & Fixed Costs
-            <Tooltip title="Subscriptions" description="Recurring payments that happen automatically every month or year." example="Netflix, Gym Membership" />
+            Fixed Income & Costs
+            <Tooltip title="Recurring Items" description="Fixed income like salary, and fixed costs like Netflix, that happen automatically every month." example="Salary, Gym Membership" />
           </h3>
-          <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="showSubscriptionModal = true">+ Add</button>
+          <router-link to="/budgeting/recurring" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Manage Items</router-link>
         </div>
-        <div v-if="subscriptions.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No active subscriptions.</div>
+        <div v-if="activeUnloggedSubscriptions.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No pending recurring items this month.</div>
         <div v-else style="max-height: 300px; overflow-y: auto;">
           <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
             <tbody>
-              <tr v-for="sub in subscriptions" :key="sub.id" style="border-bottom: 1px solid var(--border-color);">
-                <td style="padding: 0.75rem 0; font-weight: 500;">{{ sub.name }}</td>
-                <td style="padding: 0.75rem 0; color: var(--text-muted); text-align: right;">RM{{ formatCurrency(sub.amount) }} / {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}</td>
+              <tr v-for="sub in activeUnloggedSubscriptions" :key="sub.id" style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 0.75rem 0; font-weight: 500;">
+                  <span :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'" style="margin-right: 0.5rem;">{{ sub.type === 'INCOME' ? '↑' : '↓' }}</span>
+                  {{ sub.name }}
+                </td>
+                <td style="padding: 0.75rem 0; color: var(--text-muted); text-align: right;" :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'">
+                  {{ sub.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(sub.amount) }} / {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}
+                </td>
               </tr>
             </tbody>
           </table>
           <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; font-weight: 600;">
             <span>Monthly Equivalent:</span>
-            <span>RM{{ formatCurrency(monthlyFixedCosts) }}</span>
+            <span>
+              <span class="text-success" v-if="monthlyFixedIncome > 0">+RM{{ formatCurrency(monthlyFixedIncome) }}</span>
+              <span style="margin: 0 0.5rem;" v-if="monthlyFixedIncome > 0 && monthlyFixedCosts > 0">|</span>
+              <span class="text-danger" v-if="monthlyFixedCosts > 0">-RM{{ formatCurrency(monthlyFixedCosts) }}</span>
+            </span>
           </div>
         </div>
       </div>
@@ -199,11 +199,26 @@
           <label class="form-label">Category</label>
           <div style="display: flex; gap: 0.5rem;">
             <select v-if="!isNewCategory" v-model="form.categoryId" class="form-input">
+              <option :value="null">Uncategorized</option>
               <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
             <input v-else v-model="form.newCategoryName" type="text" class="form-input" placeholder="New Category Name" />
             <button type="button" class="btn btn-secondary" @click="isNewCategory = !isNewCategory">
               {{ isNewCategory ? 'Cancel' : 'New' }}
+            </button>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Item Name</label>
+          <input v-model="form.name" type="text" class="form-input" placeholder="e.g. Groceries or Salary" required />
+          
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;" v-if="targets && targets.length > 0">
+            <button v-for="t in targets.filter(t => t.type === form.type && t.name)" :key="t.id" 
+                    type="button" class="btn" 
+                    :class="form.name.toLowerCase() === t.name.toLowerCase() ? 'btn-primary' : 'btn-secondary'"
+                    @click="form.name = t.name" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+              {{ t.name }}
             </button>
           </div>
         </div>
@@ -219,49 +234,12 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Description (Optional)</label>
+          <label class="form-label">Description (Optional notes)</label>
           <input v-model="form.description" type="text" class="form-input" />
         </div>
 
         <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading">
           {{ loading ? 'Saving...' : 'Save Transaction' }}
-        </button>
-      </form>
-    </Modal>
-
-    <!-- Budget Modal -->
-    <Modal :show="showBudgetModal" title="Set Budget Limit" @close="showBudgetModal = false">
-      <form @submit.prevent="saveBudgetLimit">
-        <div class="form-group">
-          <label class="form-label">Monthly Limit (RM)</label>
-          <input v-model="budgetForm.amount" type="number" step="0.01" class="form-input" required />
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading">
-          {{ loading ? 'Saving...' : 'Save Limit' }}
-        </button>
-      </form>
-    </Modal>
-
-    <!-- Subscription Modal -->
-    <Modal :show="showSubscriptionModal" title="Add Subscription" @close="showSubscriptionModal = false">
-      <form @submit.prevent="saveSubscription">
-        <div class="form-group">
-          <label class="form-label">Name</label>
-          <input v-model="subscriptionForm.name" type="text" class="form-input" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Amount (RM)</label>
-          <input v-model="subscriptionForm.amount" type="number" step="0.01" class="form-input" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Billing Cycle</label>
-          <select v-model="subscriptionForm.billing_cycle" class="form-input" required>
-            <option value="MONTHLY">Monthly</option>
-            <option value="YEARLY">Yearly</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading">
-          {{ loading ? 'Saving...' : 'Save Subscription' }}
         </button>
       </form>
     </Modal>
@@ -280,9 +258,9 @@ const startTour = () => {
   const driverObj = driver({
     showProgress: true,
     steps: [
-      { element: '#tour-cash-flow', popover: { title: 'Net Cash Flow & True Disposable', description: 'This tracks whether you are earning more than you spend. True Disposable income subtracts your fixed subscriptions so you know your actual spending power.' } },
-      { element: '#tour-categories', popover: { title: 'Recent Transactions', description: 'A quick overview of your latest spending. You can manage detailed categories and limits above.' } },
-      { element: '#tour-subscriptions', popover: { title: 'Subscriptions', description: 'Add your recurring fixed costs here. They will automatically be subtracted from your disposable income calculation.' } },
+      { element: '#tour-cash-flow', popover: { title: 'Net Cash Flow', description: 'This tracks whether you are earning more than you spend. It calculates all your logged transactions as well as your unlogged fixed income and costs.' } },
+      { element: '#tour-categories', popover: { title: 'Recent Transactions', description: 'A quick overview of your latest spending. You can manage detailed targets and limits above.' } },
+      { element: '#tour-subscriptions', popover: { title: 'Fixed Income & Costs', description: 'Add your recurring fixed income (e.g. salary) and costs (e.g. Netflix) here. They will automatically be factored into your disposable income calculation.' } },
       { element: '#tour-add-txn', popover: { title: 'Add Transaction', description: 'Click here to log a new income or expense. Use the quick add buttons for fast entry!' } }
     ]
   });
@@ -301,9 +279,12 @@ const trendData = ref([])
 const activeTab = ref('EXPENSE')
 
 const monthlyFixedCosts = ref(0)
+const monthlyFixedIncome = ref(0)
+const loggedSubscriptionIds = ref([])
 const subscriptions = ref([])
-const showSubscriptionModal = ref(false)
-const subscriptionForm = ref({ name: '', amount: '', billing_cycle: 'MONTHLY' })
+const targets = ref([])
+const categories = ref([])
+const isNewCategory = ref(false)
 
 const d = new Date()
 const selectedMonth = ref(d.getMonth() + 1)
@@ -311,24 +292,31 @@ const selectedYear = ref(d.getFullYear())
 const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 const showModal = ref(false)
-const showBudgetModal = ref(false)
 const loading = ref(false)
-const categories = ref([])
-const isNewCategory = ref(false)
 
 const getInitialForm = () => ({
   type: 'EXPENSE',
   categoryId: null,
   newCategoryName: '',
+  name: '',
   amount: '',
   date: new Date().toISOString().split('T')[0],
   description: ''
 })
 
 const form = ref(getInitialForm())
-const budgetForm = ref({ categoryId: null, amount: '' })
 
 const formatCurrency = (val) => Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+const activeUnloggedSubscriptions = computed(() => {
+  const currentMonthKey = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`
+  return subscriptions.value.filter(s => {
+    const isArchived = s.status === 'ARCHIVED'
+    const isLogged = loggedSubscriptionIds.value.includes(s.id)
+    const isPaused = s.paused_months && s.paused_months.includes(currentMonthKey)
+    return !isArchived && !isLogged && !isPaused
+  })
+})
 
 const trendLabels = computed(() => trendData.value.map(d => d.label))
 const trendDatasets = computed(() => [
@@ -358,6 +346,9 @@ const fetchData = async () => {
     incomeBreakdown.value = res.data.income_breakdown || []
     recentTransactions.value = res.data.recent_transactions || []
     monthlyFixedCosts.value = res.data.monthly_fixed_costs || 0
+    monthlyFixedIncome.value = res.data.monthly_fixed_income || 0
+    loggedSubscriptionIds.value = res.data.logged_subscription_ids || []
+    targets.value = res.data.targets || []
   } catch (e) {
     console.error(e)
   }
@@ -379,77 +370,29 @@ const fetchSubscriptions = async () => {
   }
 }
 
-const saveSubscription = async () => {
-  loading.value = true
-  try {
-    await api.post('/budgeting/subscriptions/', subscriptionForm.value)
-    showSubscriptionModal.value = false
-    subscriptionForm.value = { name: '', amount: '', billing_cycle: 'MONTHLY' }
-    await fetchSubscriptions()
-    await fetchData()
-  } catch (e) {
-    console.error(e)
-    alert('Failed to save subscription')
-  } finally {
-    loading.value = false
-  }
-}
-
-const openBudgetModal = (categoryId, currentLimit) => {
-  budgetForm.value.categoryId = categoryId
-  budgetForm.value.amount = currentLimit || ''
-  showBudgetModal.value = true
-}
-
-const saveBudgetLimit = async () => {
-  loading.value = true
-  try {
-    const res = await api.get('/budgeting/targets/')
-    const existing = res.data.find(t => t.category === budgetForm.value.categoryId)
-    
-    if (existing) {
-      await api.patch(`/budgeting/targets/${existing.id}/`, { amount: budgetForm.value.amount })
-    } else {
-      await api.post('/budgeting/targets/', {
-        category: budgetForm.value.categoryId,
-        amount: budgetForm.value.amount
-      })
-    }
-    showBudgetModal.value = false
-    await fetchData()
-  } catch (e) {
-    console.error(e)
-    alert('Failed to save budget limit')
-  } finally {
-    loading.value = false
-  }
-}
-
-const quickAdd = (type, categoryName) => {
-  const cat = categories.value.find(c => c.name.toLowerCase() === categoryName.toLowerCase() && c.type === type)
-  form.value = getInitialForm()
-  form.value.type = type
-  
-  if (cat) {
-    form.value.categoryId = cat.id
-    isNewCategory.value = false
-  } else {
-    isNewCategory.value = true
-    form.value.newCategoryName = categoryName
-  }
-  showModal.value = true
-}
-
 const fetchCategories = async () => {
   try {
     const res = await api.get('/budgeting/categories/')
     categories.value = res.data.filter(c => c.type === form.value.type)
-    if (categories.value.length > 0 && !form.value.categoryId) {
-      form.value.categoryId = categories.value[0].id
-    }
   } catch (e) {
     console.error(e)
   }
+}
+
+const quickAdd = (type, categoryName) => {
+  form.value = getInitialForm()
+  form.value.type = type
+  fetchCategories().then(() => {
+    const cat = categories.value.find(c => c.name.toLowerCase() === categoryName.toLowerCase())
+    if (cat) {
+      form.value.categoryId = cat.id
+      isNewCategory.value = false
+    } else {
+      isNewCategory.value = true
+      form.value.newCategoryName = categoryName
+    }
+    showModal.value = true
+  })
 }
 
 const submitTransaction = async () => {
@@ -467,6 +410,8 @@ const submitTransaction = async () => {
 
     await api.post('/budgeting/transactions/', {
       category: categoryId,
+      name: form.value.name,
+      type: form.value.type,
       amount: form.value.amount,
       date: form.value.date,
       description: form.value.description

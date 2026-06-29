@@ -84,6 +84,15 @@
         </div>
       </div>
     </div>
+
+    <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+      <div class="card">
+        <h3 style="margin-bottom: 1rem; font-weight: 600;">Income vs Expenses (Last 6 Months)</h3>
+        <div style="height: 300px;">
+          <BarChart v-if="trendLabels.length > 0" :labels="trendLabels" :datasets="trendDatasets" />
+        </div>
+      </div>
+    </div>
       
     <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card">
@@ -137,6 +146,7 @@ const totalLiquidAssets = ref(0)
 const profitPercentage = ref(0)
 const totalLiabilities = ref(0)
 const yearlyData = ref([])
+const trendData = ref([])
 
 const netWorth = computed(() => {
   return totalAssets.value + totalLiquidAssets.value - totalLiabilities.value
@@ -190,6 +200,22 @@ const progressDatasets = computed(() => [
     stepped: true, 
     backgroundColor: '#3B82F6', 
     borderColor: '#3B82F6'
+  }
+])
+
+const trendLabels = computed(() => trendData.value.map(d => d.label))
+const trendDatasets = computed(() => [
+  { 
+    label: 'Income', 
+    data: trendData.value.map(d => d.income), 
+    backgroundColor: '#10B981',
+    borderRadius: 4
+  },
+  { 
+    label: 'Expense', 
+    data: trendData.value.map(d => d.expense), 
+    backgroundColor: '#EF4444',
+    borderRadius: 4
   }
 ])
 
@@ -273,6 +299,13 @@ const fetchData = async () => {
     })
     totalLiquidAssets.value = liquidity
   } catch (e) {
+    console.error(e)
+  }
+
+  try {
+    const trendRes = await api.get('/budgeting/transactions/trend/')
+    trendData.value = trendRes.data
+  } catch(e) {
     console.error(e)
   }
 

@@ -26,7 +26,11 @@
           </select>
         </div>
         <div style="flex: 1; min-width: 150px;">
-          <label class="form-label">Search</label>
+          <label class="form-label">Name</label>
+          <input v-model="filters.name" type="text" class="form-input" placeholder="Search item name..." />
+        </div>
+        <div style="flex: 1; min-width: 150px;">
+          <label class="form-label">Description</label>
           <input v-model="filters.search" type="text" class="form-input" placeholder="Search description..." />
         </div>
         <div style="flex: 1; min-width: 150px;">
@@ -47,6 +51,7 @@
               <th>Date</th>
               <th>Type</th>
               <th>Category</th>
+              <th>Name</th>
               <th>Description</th>
               <th>Amount</th>
               <th>Actions</th>
@@ -54,16 +59,17 @@
           </thead>
           <tbody>
             <tr v-if="filteredHistory.length === 0">
-              <td colspan="6" class="text-center text-muted" style="text-align: center;">No transactions match your filters.</td>
+              <td colspan="7" class="text-center text-muted" style="text-align: center;">No transactions match your filters.</td>
             </tr>
             <tr v-for="item in filteredHistory" :key="item.id">
               <td>{{ item.date }}</td>
               <td>
-                <span :class="item.category_type === 'INCOME' ? 'text-success' : 'text-danger'">
-                  {{ item.category_type === 'INCOME' ? 'Income' : 'Expense' }}
+                <span :class="item.type === 'INCOME' ? 'text-success' : 'text-danger'">
+                  {{ item.type === 'INCOME' ? 'Income' : 'Expense' }}
                 </span>
               </td>
-              <td>{{ item.category_name }}</td>
+              <td>{{ item.category_name || 'Uncategorized' }}</td>
+              <td style="font-weight: 500;">{{ item.name }}</td>
               <td>{{ item.description || '-' }}</td>
               <td style="font-weight: 600;">RM{{ formatCurrency(item.amount) }}</td>
               <td>
@@ -93,11 +99,26 @@
           <label class="form-label">Category</label>
           <div style="display: flex; gap: 0.5rem;">
             <select v-if="!isNewCategory" v-model="form.categoryId" class="form-input">
+              <option :value="null">Uncategorized</option>
               <option v-for="c in categories.filter(c => c.type === form.type)" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
             <input v-else v-model="form.newCategoryName" type="text" class="form-input" placeholder="New Category Name" />
             <button type="button" class="btn btn-secondary" @click="isNewCategory = !isNewCategory">
               {{ isNewCategory ? 'Cancel' : 'New' }}
+            </button>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Item Name</label>
+          <input v-model="form.name" type="text" class="form-input" placeholder="e.g. Groceries or Salary" required />
+          
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;" v-if="targets && targets.length > 0">
+            <button v-for="t in targets.filter(t => t.type === form.type && t.name)" :key="t.id" 
+                    type="button" class="btn" 
+                    :class="form.name.toLowerCase() === t.name.toLowerCase() ? 'btn-primary' : 'btn-secondary'"
+                    @click="form.name = t.name" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+              {{ t.name }}
             </button>
           </div>
         </div>
@@ -135,26 +156,33 @@ const showModal = ref(false)
 const loading = ref(false)
 const editMode = ref(false)
 const editingId = ref(null)
+const targets = ref([])
 const categories = ref([])
 const isNewCategory = ref(false)
 
 const filters = ref({
   type: '',
   category: '',
+  name: '',
   search: '',
   month: ''
 })
 
 const clearFilters = () => {
-  filters.value = { type: '', category: '', search: '', month: '' }
+  filters.value = { type: '', category: '', name: '', search: '', month: '' }
 }
 
 const filteredHistory = computed(() => {
   return history.value.filter(item => {
     // Type Filter
-    if (filters.value.type && item.category_type !== filters.value.type) return false
+    if (filters.value.type && item.type !== filters.value.type) return false
     // Category Filter
     if (filters.value.category && item.category_name !== filters.value.category) return false
+    // Name Filter
+    if (filters.value.name) {
+      const nameLower = filters.value.name.toLowerCase()
+      if (!item.name || !item.name.toLowerCase().includes(nameLower)) return false
+    }
     // Search Filter
     if (filters.value.search) {
       const searchLower = filters.value.search.toLowerCase()
@@ -173,6 +201,7 @@ const getInitialForm = () => ({
   type: 'EXPENSE',
   categoryId: null,
   newCategoryName: '',
+  name: '',
   amount: '',
   date: new Date().toISOString().split('T')[0],
   description: ''
@@ -195,12 +224,15 @@ const fetchCategories = async () => {
   try {
     const res = await api.get('/budgeting/categories/')
     categories.value = res.data
-    
-    // For the modal dropdown, we only want categories of the selected type
-    const modalCategories = categories.value.filter(c => c.type === form.value.type)
-    if (modalCategories.length > 0 && !form.value.categoryId) {
-      form.value.categoryId = modalCategories[0].id
-    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const fetchTargets = async () => {
+  try {
+    const res = await api.get('/budgeting/targets/')
+    targets.value = res.data
   } catch (e) {
     console.error(e)
   }
@@ -211,7 +243,6 @@ const openModal = () => {
   editingId.value = null
   isNewCategory.value = false
   form.value = getInitialForm()
-  fetchCategories()
   showModal.value = true
 }
 
@@ -220,19 +251,14 @@ const editTransaction = async (item) => {
   editingId.value = item.id
   isNewCategory.value = false
   form.value = {
-    type: item.category_type,
+    type: item.type,
     categoryId: item.category,
     newCategoryName: '',
+    name: item.name,
     amount: item.amount,
     date: item.date,
     description: item.description || ''
   }
-  
-  // Refetch categories to ensure all are loaded, then filter for the modal
-  const res = await api.get('/budgeting/categories/')
-  categories.value = res.data
-  
-  form.value.categoryId = item.category
   showModal.value = true
 }
 
@@ -263,6 +289,8 @@ const submitTransaction = async () => {
 
     const payload = {
       category: categoryId,
+      name: form.value.name,
+      type: form.value.type,
       amount: form.value.amount,
       date: form.value.date,
       description: form.value.description
@@ -287,5 +315,6 @@ const submitTransaction = async () => {
 onMounted(() => {
   fetchHistory()
   fetchCategories()
+  fetchTargets()
 })
 </script>

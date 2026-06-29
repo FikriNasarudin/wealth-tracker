@@ -37,6 +37,8 @@
         </button>
         <div class="submenu" v-show="openMenus.budgeting">
           <router-link to="/budgeting" class="submenu-item" exact-active-class="active">Overview</router-link>
+          <router-link to="/budgeting/recurring" class="submenu-item" active-class="active">Recurring Items</router-link>
+          <router-link to="/budgeting/targets" class="submenu-item" active-class="active">Manage Targets</router-link>
           <router-link to="/budgeting/history" class="submenu-item" active-class="active">History</router-link>
         </div>
       </div>
@@ -63,7 +65,8 @@
         <div class="submenu" v-show="openMenus.liabilities">
           <router-link to="/liabilities" class="submenu-item" exact-active-class="active">Overview</router-link>
           <router-link to="/liabilities/history" class="submenu-item" active-class="active">History</router-link>
-          <router-link to="/liabilities/manage" class="submenu-item" active-class="active">Manage</router-link>
+          <router-link to="/liabilities/credit-cards" class="submenu-item" active-class="active">Credit Cards</router-link>
+          <router-link to="/liabilities/manage" class="submenu-item" active-class="active">Manage Lenders</router-link>
         </div>
       </div>
     </nav>

@@ -19,6 +19,9 @@
           <option value="">All Lenders</option>
           <option v-for="l in lenders" :key="l.id" :value="l.id">{{ l.name }}</option>
         </select>
+        
+        <router-link to="/liabilities/manage" class="btn btn-secondary">Manage Cards & Lenders</router-link>
+        
         <button id="tour-add-liability" class="btn btn-primary" @click="showModal = true" style="margin-left: 1rem;">+ Add Snapshot</button>
       </div>
     </header>
