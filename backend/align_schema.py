@@ -36,6 +36,16 @@ def add_column_if_not_exists(table_name, column_name, column_def):
         else:
             print(f"Column {column_name} already exists in {table_name}")
 
+def set_column_default(table_name, column_name, default_val):
+    if not table_exists(table_name):
+        return
+    with connection.cursor() as cursor:
+        try:
+            cursor.execute(f"ALTER TABLE {table_name} ALTER COLUMN {column_name} SET DEFAULT {default_val}")
+            print(f"Set default {default_val} for {table_name}.{column_name}")
+        except Exception as e:
+            print(f"Could not set default for {table_name}.{column_name}: {e}")
+
 if __name__ == "__main__":
     print("Aligning budgeting schema to fix migration resets...")
     
@@ -66,5 +76,16 @@ if __name__ == "__main__":
     add_column_if_not_exists("budgeting_budgettarget", "start_date", "DATE NULL")
     add_column_if_not_exists("budgeting_budgettarget", "end_date", "DATE NULL")
     add_column_if_not_exists("budgeting_budgettarget", "paused_months", "JSON NULL")
+    
+    # Fix missing defaults for is_active which causes IntegrityError on older MySQL DBs
+    set_column_default("liabilities_lender", "is_active", "1")
+    set_column_default("liabilities_liabilitycategory", "is_active", "1")
+    set_column_default("investments_investmentcategory", "is_active", "1")
+    set_column_default("investments_investmentplatform", "is_active", "1")
+    
+    # Budgeting tables might also have leftover is_active columns from very old versions
+    set_column_default("budgeting_subscription", "is_active", "1")
+    set_column_default("budgeting_budgettarget", "is_active", "1")
+    set_column_default("budgeting_transactioncategory", "is_active", "1")
 
     print("Schema alignment complete.")
