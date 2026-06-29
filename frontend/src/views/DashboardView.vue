@@ -23,6 +23,13 @@
           <Tooltip title="Liquid Assets" description="Money in bank accounts or cash that you can spend immediately." example="Savings account, physical cash" />
         </div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--accent-primary);">RM{{ formatCurrency(totalLiquidAssets) }}</div>
+        <div class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+          <svg style="width: 16px; height: 16px; margin-right: 0.25rem; color: var(--accent-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Runway: 
+          <strong style="margin-left: 0.25rem;">
+            {{ emergencyRunway === null ? 'N/A' : (emergencyRunway >= 999 ? '999+' : emergencyRunway.toFixed(1)) }} Months
+          </strong>
+        </div>
       </div>
       <div id="tour-invested" class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
@@ -77,10 +84,46 @@
           />
         </div>
       </div>
-      <div class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Compound Effect (Invested vs Profit)</h3>
-        <div style="height: 300px;">
-          <BarChart v-if="yearlyData.length > 0" :labels="monthlyLabels" :datasets="compoundDatasets" />
+      <div class="card" style="display: flex; flex-direction: column;">
+        <h3 style="margin-bottom: 1rem; font-weight: 600;">
+          Monthly Cash Flow ({{ monthsList[selectedMonth - 1] }})
+          <Tooltip title="Cash Flow Diagram" description="A visual breakdown of how your income is split into expenses and savings this month." example="" />
+        </h3>
+        
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 1.5rem; padding: 1rem; background: var(--bg-background); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; font-weight: 600; color: var(--success); align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <svg style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Total Income
+            </div>
+            <span>RM{{ formatCurrency(currentMonthIncome) }}</span>
+          </div>
+          
+          <div style="display: flex; height: 32px; border-radius: 16px; overflow: hidden; background: var(--border-color);">
+            <div :style="{ width: expensePercentage + '%', background: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 600, transition: 'width 0.5s ease' }">
+               {{ expensePercentage >= 5 ? expensePercentage.toFixed(1) + '%' : '' }}
+            </div>
+            <div :style="{ width: cashflowPercentage + '%', background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 600, transition: 'width 0.5s ease' }">
+               {{ cashflowPercentage >= 5 ? cashflowPercentage.toFixed(1) + '%' : '' }}
+            </div>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; font-size: 0.875rem;">
+            <div style="color: var(--danger);">
+               <div style="font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
+                 <svg style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+                 Total Expenses
+               </div>
+               <div style="font-weight: 500; font-size: 1rem; margin-top: 0.25rem;">RM{{ formatCurrency(currentMonthExpenses) }}</div>
+            </div>
+            <div style="color: var(--accent-primary); text-align: right;">
+               <div style="font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 0.25rem;">
+                 Savings (Net Flow)
+                 <svg style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+               </div>
+               <div style="font-weight: 500; font-size: 1rem; margin-top: 0.25rem;">RM{{ formatCurrency(currentMonthNetCashFlow) }}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -148,8 +191,27 @@ const totalLiabilities = ref(0)
 const yearlyData = ref([])
 const trendData = ref([])
 
+const currentMonthIncome = ref(0)
+const currentMonthExpenses = ref(0)
+const currentMonthNetCashFlow = ref(0)
+
 const netWorth = computed(() => {
   return totalAssets.value + totalLiquidAssets.value - totalLiabilities.value
+})
+
+const emergencyRunway = computed(() => {
+  if (currentMonthExpenses.value <= 0) return null;
+  return totalLiquidAssets.value / currentMonthExpenses.value;
+})
+
+const expensePercentage = computed(() => {
+  if (currentMonthIncome.value <= 0) return currentMonthExpenses.value > 0 ? 100 : 0;
+  return Math.min((currentMonthExpenses.value / currentMonthIncome.value) * 100, 100);
+})
+
+const cashflowPercentage = computed(() => {
+  if (currentMonthIncome.value <= 0) return 0;
+  return Math.max(0, 100 - expensePercentage.value);
 })
 
 const formatCurrency = (val) => {
@@ -306,6 +368,15 @@ const fetchData = async () => {
     const trendRes = await api.get('/budgeting/transactions/trend/')
     trendData.value = trendRes.data
   } catch(e) {
+    console.error(e)
+  }
+
+  try {
+    const currentBudgetRes = await api.get(`/budgeting/transactions/summary/?month=${month}&year=${year}`)
+    currentMonthIncome.value = currentBudgetRes.data.total_income || 0
+    currentMonthExpenses.value = currentBudgetRes.data.total_expenses || 0
+    currentMonthNetCashFlow.value = currentBudgetRes.data.net_cash_flow || 0
+  } catch (e) {
     console.error(e)
   }
 

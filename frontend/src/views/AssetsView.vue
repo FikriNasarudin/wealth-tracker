@@ -59,14 +59,26 @@
       </div>
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
-          Profit Percentage
-          <Tooltip title="Profit Percentage" description="Your absolute profit expressed as a percentage of your total invested amount." example="(2,000 / 10,000) * 100 = 20%" />
+          True ROI (%)
+          <Tooltip title="True Return on Investment" description="Your absolute profit expressed as a percentage of your total invested amount. The ultimate metric of portfolio performance." example="(2,000 / 10,000) * 100 = 20%" />
         </div>
         <div style="font-size: 2rem; font-weight: 700;" :class="profitPercentage >= 0 ? 'text-success' : 'text-danger'">{{ profitPercentage }}%</div>
         <div v-if="percentageChange !== null" :class="percentageChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
           <svg v-if="percentageChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
           <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
           {{ Math.abs(percentageChange).toFixed(2) }}% vs last month
+        </div>
+      </div>
+    </div>
+    
+    <div v-if="maxConcentration" class="card" style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); margin-bottom: 2rem;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <svg style="width: 32px; height: 32px; color: var(--danger);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <div>
+          <h3 style="color: var(--danger); font-weight: 600; margin: 0 0 0.25rem 0;">Diversification Risk Warning</h3>
+          <p style="margin: 0; color: var(--text-primary); font-size: 0.875rem;">
+            <strong>{{ maxConcentration.percentage.toFixed(1) }}%</strong> of your portfolio is concentrated in <strong>{{ maxConcentration.category }}</strong>. A healthy portfolio generally avoids having more than 75% of wealth tied to a single asset class.
+          </p>
         </div>
       </div>
     </div>
@@ -197,6 +209,23 @@ const profitChange = computed(() => calculateChange(absoluteProfit.value, prevAb
 const percentageChange = computed(() => {
   if (prevTotalInvested.value === 0) return null;
   return profitPercentage.value - prevProfitPercentage.value;
+})
+
+const maxConcentration = computed(() => {
+  if (!byCategory.value || byCategory.value.length === 0 || totalBalance.value === 0) return null;
+  let maxCat = null;
+  let maxVal = 0;
+  for (const cat of byCategory.value) {
+    if (cat.balance > maxVal) {
+      maxVal = cat.balance;
+      maxCat = cat;
+    }
+  }
+  const pct = (maxVal / totalBalance.value) * 100;
+  if (pct > 75) {
+    return { category: maxCat.category, percentage: pct };
+  }
+  return null;
 })
 
 const d = new Date()

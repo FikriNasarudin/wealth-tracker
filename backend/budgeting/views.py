@@ -213,16 +213,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
         income = qs.filter(type='INCOME').aggregate(total=Sum('amount'))['total'] or 0
         expenses = qs.filter(type='EXPENSE').aggregate(total=Sum('amount'))['total'] or 0
         
-        # Aggregate income and expenses by Category for overview
-        expenses_qs = qs.filter(type='EXPENSE').values(
-            'category_id',
-            cat_name=F('category__name')
-        ).annotate(total=Sum('amount'))
-        
-        income_qs = qs.filter(type='INCOME').values(
-            'category_id',
-            cat_name=F('category__name')
-        ).annotate(total=Sum('amount'))
+        # We will build the breakdowns strictly based on active targets.
+        # But we still need to calculate the raw income/expenses totals from the DB.
         
         targets_qs = BudgetTarget.objects.filter(user=request.user).select_related('category')
         
@@ -249,36 +241,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
                     continue
             active_targets.append(t)
             
-        # Target limit dictionaries
-        category_targets = {t.category_id: t.amount for t in active_targets if t.category_id}
-        name_targets = {t.name.lower(): t.amount for t in active_targets if t.name}
-        
         forecast_income = sum(t.amount for t in active_targets if t.type == 'INCOME')
         forecast_expenses = sum(t.amount for t in active_targets if t.type == 'EXPENSE')
-
-        expense_breakdown = []
-        for e in expenses_qs:
-            weight = (e['total'] / expenses * 100) if expenses > 0 else 0
-            cname = e['cat_name'] or 'Uncategorized'
-            expense_breakdown.append({
-                'category_id': e['category_id'],
-                'category': cname,
-                'amount': e['total'],
-                'weight_percentage': round(weight, 2),
-                'budget_limit': category_targets.get(e['category_id'])
-            })
-            
-        income_breakdown = []
-        for inc in income_qs:
-            weight = (inc['total'] / income * 100) if income > 0 else 0
-            cname = inc['cat_name'] or 'Uncategorized'
-            income_breakdown.append({
-                'category_id': inc['category_id'],
-                'category': cname,
-                'amount': inc['total'],
-                'weight_percentage': round(weight, 2),
-                'budget_limit': category_targets.get(inc['category_id'])
-            })
             
         recent_transactions = TransactionSerializer(
             qs.order_by('-date', '-id')[:5], many=True
@@ -327,29 +291,46 @@ class TransactionViewSet(viewsets.ModelViewSet):
             if s.type == 'INCOME':
                 monthly_fixed_income += monthly_amt
                 income += monthly_amt
-                
-                found = False
-                for b in income_breakdown:
-                    if b['category_id'] == s.category_id:
-                        b['amount'] += monthly_amt
-                        found = True
-                        break
-                if not found:
-                    cname = s.category.name if s.category else 'Uncategorized'
-                    income_breakdown.append({'category_id': s.category_id, 'category': cname, 'amount': monthly_amt, 'budget_limit': category_targets.get(s.category_id)})
             else:
                 monthly_fixed_costs += monthly_amt
                 expenses += monthly_amt
+
+        # Now build the target breakdowns
+        expense_breakdown = []
+        income_breakdown = []
+        
+        for t in active_targets:
+            if t.category_id:
+                txn_sum = qs.filter(type=t.type, category_id=t.category_id).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            elif t.name:
+                txn_sum = qs.filter(type=t.type, name__iexact=t.name).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            else:
+                txn_sum = Decimal('0.00')
                 
-                found = False
-                for b in expense_breakdown:
-                    if b['category_id'] == s.category_id:
-                        b['amount'] += monthly_amt
-                        found = True
-                        break
-                if not found:
-                    cname = s.category.name if s.category else 'Uncategorized'
-                    expense_breakdown.append({'category_id': s.category_id, 'category': cname, 'amount': monthly_amt, 'budget_limit': category_targets.get(s.category_id)})
+            sub_sum = Decimal('0.00')
+            for s in subs:
+                if s.type == t.type:
+                    monthly_amt = s.amount if s.billing_cycle == 'MONTHLY' else s.amount / Decimal('12.0')
+                    if t.category_id and s.category_id == t.category_id:
+                        sub_sum += monthly_amt
+                    elif t.name and s.name.lower() == t.name.lower():
+                        sub_sum += monthly_amt
+                        
+            total_amt = txn_sum + sub_sum
+            cname = t.category.name if t.category else t.name
+            
+            entry = {
+                'category_id': t.category_id or t.name,
+                'category': cname,
+                'amount': total_amt,
+                'weight_percentage': 0, # will calculate below
+                'budget_limit': t.amount
+            }
+            
+            if t.type == 'INCOME':
+                income_breakdown.append(entry)
+            else:
+                expense_breakdown.append(entry)
 
         # Re-calculate weights
         for b in income_breakdown:

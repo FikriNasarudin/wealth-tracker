@@ -63,6 +63,38 @@
         </div>
       </div>
     </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+      <div class="card">
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
+           Debt-to-Income (DTI)
+           <Tooltip title="Debt-to-Income Ratio" description="The percentage of your monthly income that goes towards paying minimum debt obligations." example="Ideally keep this below 36%." />
+        </div>
+        <div style="font-size: 2rem; font-weight: 700;" :class="dtiRatio === null ? 'text-muted' : (dtiRatio <= 36 ? 'text-success' : (dtiRatio <= 43 ? 'text-warning' : 'text-danger'))">
+           {{ dtiRatio === null ? 'N/A' : dtiRatio.toFixed(1) + '%' }}
+        </div>
+        <div v-if="dtiRatio !== null" class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+          <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path v-if="dtiRatio <= 36" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          {{ dtiRatio <= 36 ? 'Healthy' : (dtiRatio <= 43 ? 'Elevated Risk' : 'High Risk') }}
+        </div>
+      </div>
+      <div class="card">
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
+           Cost of Debt (Avg Interest)
+           <Tooltip title="Weighted Average Interest Rate" description="The average interest rate you are paying across all your active loans, weighted by how much you owe." example="A 10% loan of RM1,000 impacts this less than a 5% loan of RM100,000." />
+        </div>
+        <div style="font-size: 2rem; font-weight: 700; color: var(--warning);">
+           {{ weightedAvgInterest.toFixed(2) }}%
+        </div>
+        <div class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+          <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          RM{{ formatCurrency(totalMonthlyDebtPayment) }}/mo Total Payment
+        </div>
+      </div>
+    </div>
 
     <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card">
@@ -191,10 +223,19 @@ const distribution = ref([])
 const yearlyData = ref([])
 const payoffPlans = ref([])
 
+const totalMonthlyDebtPayment = ref(0)
+const weightedAvgInterest = ref(0)
+const currentMonthIncome = ref(0)
+
 const calculateChange = (current, previous) => {
   if (!previous) return null;
   return ((current - previous) / Math.abs(previous)) * 100;
 }
+
+const dtiRatio = computed(() => {
+  if (currentMonthIncome.value <= 0) return null;
+  return (totalMonthlyDebtPayment.value / currentMonthIncome.value) * 100;
+})
 
 const originalChange = computed(() => calculateChange(totalOriginal.value, prevTotalOriginal.value))
 const remainingChange = computed(() => calculateChange(totalRemaining.value, prevTotalRemaining.value))
@@ -350,6 +391,10 @@ const fetchData = async () => {
       }
     })
     
+    let sumPayments = 0;
+    let sumWeightedInterest = 0;
+    let sumPrincipalForInterest = 0;
+    
     payoffPlans.value = Object.values(latestPerLiabilitySelected)
       .filter(s => parseFloat(s.remaining_principal) > 0)
       .map(s => {
@@ -358,6 +403,10 @@ const fetchData = async () => {
         const principal = parseFloat(s.remaining_principal)
         const payment = parseFloat(s.monthly_payment)
         const original = parseFloat(s.original_loan_amount)
+        
+        sumPayments += payment;
+        sumWeightedInterest += (interestRate * principal);
+        sumPrincipalForInterest += principal;
         
         let months = 0
         if (payment > 0) {
@@ -384,6 +433,16 @@ const fetchData = async () => {
         }
       }).sort((a, b) => b.interestRate - a.interestRate)
 
+    totalMonthlyDebtPayment.value = sumPayments;
+    weightedAvgInterest.value = sumPrincipalForInterest > 0 ? (sumWeightedInterest / sumPrincipalForInterest) : 0;
+
+  } catch (e) {
+    console.error(e)
+  }
+  
+  try {
+    const currentBudgetRes = await api.get(`/budgeting/transactions/summary/?month=${selectedMonth.value}&year=${selectedYear.value}`)
+    currentMonthIncome.value = currentBudgetRes.data.total_income || 0
   } catch (e) {
     console.error(e)
   }

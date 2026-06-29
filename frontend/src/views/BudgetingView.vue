@@ -42,12 +42,16 @@
           <span v-if="forecastExpenses > 0">Target: RM{{ formatCurrency(forecastExpenses) }}</span>
         </div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--danger); margin-bottom: 0.5rem;">RM{{ formatCurrency(expenses) }}</div>
-        <div v-if="forecastExpenses > 0" style="width: 100%; height: 6px; background: var(--bg-background); border-radius: 3px; overflow: hidden;">
+        <div v-if="forecastExpenses > 0" style="width: 100%; height: 6px; background: var(--bg-background); border-radius: 3px; overflow: hidden; margin-bottom: 0.5rem;">
           <div :style="{
             width: Math.min((expenses / forecastExpenses) * 100, 100) + '%',
             height: '100%',
             background: expenses > forecastExpenses ? 'var(--danger)' : (expenses > forecastExpenses * 0.8 ? 'var(--warning)' : 'var(--success)')
           }"></div>
+        </div>
+        <div class="text-muted" style="font-size: 0.875rem; display: flex; align-items: center;">
+          <svg style="width: 16px; height: 16px; margin-right: 0.25rem; color: var(--danger);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+          Burn Rate: RM{{ formatCurrency(dailyBurnRate) }} / day
         </div>
       </div>
       <div id="tour-cash-flow" class="card">
@@ -58,7 +62,11 @@
           </span>
           <span v-if="forecastIncome > 0 || forecastExpenses > 0">Target: RM{{ formatCurrency(forecastIncome - forecastExpenses) }}</span>
         </div>
-        <div style="font-size: 2rem; font-weight: 700;" :class="netCashFlow >= 0 ? 'text-success' : 'text-danger'">RM{{ formatCurrency(netCashFlow) }}</div>
+        <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;" :class="netCashFlow >= 0 ? 'text-success' : 'text-danger'">RM{{ formatCurrency(netCashFlow) }}</div>
+        <div class="text-muted" style="font-size: 0.875rem; display: flex; align-items: center;">
+          <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" :class="savingsRate >= 20 ? 'text-success' : (savingsRate >= 10 ? 'text-warning' : 'text-danger')" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          Savings Rate: <strong :class="savingsRate >= 20 ? 'text-success' : (savingsRate >= 10 ? 'text-warning' : 'text-danger')" style="margin-left: 0.25rem;">{{ savingsRate.toFixed(1) }}%</strong>
+        </div>
       </div>
     </div>
 
@@ -316,6 +324,25 @@ const activeUnloggedSubscriptions = computed(() => {
     const isPaused = s.paused_months && s.paused_months.includes(currentMonthKey)
     return !isArchived && !isLogged && !isPaused
   })
+})
+
+const savingsRate = computed(() => {
+  if (income.value <= 0) return 0;
+  return (netCashFlow.value / income.value) * 100;
+})
+
+const dailyBurnRate = computed(() => {
+  if (expenses.value <= 0) return 0;
+  const currentRealMonth = d.getMonth() + 1;
+  const currentRealYear = d.getFullYear();
+  let days = 1;
+  
+  if (selectedYear.value === currentRealYear && selectedMonth.value === currentRealMonth) {
+    days = Math.max(d.getDate(), 1);
+  } else {
+    days = new Date(selectedYear.value, selectedMonth.value, 0).getDate();
+  }
+  return expenses.value / days;
 })
 
 const trendLabels = computed(() => trendData.value.map(d => d.label))
