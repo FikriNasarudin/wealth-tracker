@@ -38,9 +38,15 @@ class LiabilitySnapshotViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = LiabilitySnapshot.objects.filter(user=self.request.user).select_related('category', 'lender')
-        lender_id = self.request.query_params.get('lender_id')
+        lender_id = self.request.query_params.get('lender_id') or self.request.query_params.get('lender')
         if lender_id:
             qs = qs.filter(lender_id=lender_id)
+        month = self.request.query_params.get('month')
+        if month:
+            qs = qs.filter(month=month)
+        year = self.request.query_params.get('year')
+        if year:
+            qs = qs.filter(year=year)
         return qs
 
     def perform_create(self, serializer):
@@ -67,7 +73,8 @@ class LiabilitySnapshotViewSet(viewsets.ModelViewSet):
             if prev_snapshot:
                 remaining_principal = prev_snapshot.remaining_principal - monthly_payment
             else:
-                remaining_principal = original_loan_amount - monthly_payment
+                is_credit_card = category and category.name.lower() == 'credit cards'
+                remaining_principal = 0 if is_credit_card else (original_loan_amount - monthly_payment)
 
         serializer.save(
             user=self.request.user, 
@@ -102,7 +109,8 @@ class LiabilitySnapshotViewSet(viewsets.ModelViewSet):
             if prev_snapshot:
                 kwargs['remaining_principal'] = prev_snapshot.remaining_principal - monthly_payment
             else:
-                kwargs['remaining_principal'] = kwargs.get('original_loan_amount', serializer.instance.original_loan_amount) - monthly_payment
+                is_credit_card = category and category.name.lower() == 'credit cards'
+                kwargs['remaining_principal'] = 0 if is_credit_card else (kwargs.get('original_loan_amount', serializer.instance.original_loan_amount) - monthly_payment)
 
         serializer.save(**kwargs)
 

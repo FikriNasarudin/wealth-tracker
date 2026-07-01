@@ -1,6 +1,6 @@
 <template>
   <div class="main-content">
-    <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+    <header class="flex-responsive" style="margin-bottom: 2rem; gap: 1rem;">
       <div>
         <h1 style="font-weight: 600;">Snapshot History</h1>
         <p class="text-muted">Manage your raw liability snapshots.</p>
@@ -12,11 +12,17 @@
       <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 150px;">
           <label class="form-label">Month</label>
-          <input v-model="filters.month" type="number" min="1" max="12" class="form-input" placeholder="All Months" />
+          <select v-model="filters.month" class="form-input">
+            <option value="">All Months</option>
+            <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
+          </select>
         </div>
         <div style="flex: 1; min-width: 150px;">
           <label class="form-label">Year</label>
-          <input v-model="filters.year" type="number" min="2000" max="2100" class="form-input" placeholder="All Years" />
+          <select v-model="filters.year" class="form-input">
+            <option value="">All Years</option>
+            <option v-for="y in yearsList" :key="y" :value="y">{{ y }}</option>
+          </select>
         </div>
         <div style="flex: 1; min-width: 150px;">
           <label class="form-label">Category</label>
@@ -32,8 +38,8 @@
             <option v-for="l in lenders" :key="l.id" :value="l.name">{{ l.name }}</option>
           </select>
         </div>
-        <div style="display: flex; align-items: flex-end;">
-          <button class="btn btn-secondary" @click="clearFilters">Clear Filters</button>
+        <div style="display: flex; align-items: flex-end; flex: 1; min-width: 150px;">
+          <button class="btn btn-secondary" @click="clearFilters" style="width: 100%;">Clear Filters</button>
         </div>
       </div>
     </div>
@@ -79,20 +85,25 @@
         <div style="display: flex; gap: 1rem;">
           <div class="form-group" style="flex: 1">
             <label class="form-label">Month</label>
-            <input v-model="form.month" type="number" min="1" max="12" class="form-input" required />
+            <select v-model="form.month" class="form-input" required>
+              <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
+            </select>
           </div>
           <div class="form-group" style="flex: 1">
             <label class="form-label">Year</label>
-            <input v-model="form.year" type="number" min="2000" max="2100" class="form-input" required />
+            <select v-model="form.year" class="form-input" required>
+              <option v-for="y in yearsList" :key="y" :value="y">{{ y }}</option>
+            </select>
           </div>
         </div>
         
         <div class="form-group">
           <label class="form-label">Lender</label>
-          <select v-model="form.lenderId" class="form-input" required>
-            <option value="" disabled>Select a Lender</option>
-            <option v-for="l in lenders" :key="l.id" :value="l.id">{{ l.name }}</option>
-          </select>
+          <SearchableSelect 
+            v-model="form.lenderId" 
+            :options="lenderOptions" 
+            placeholder="Search lender..." 
+          />
           <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">
             New lenders and categories can be created in the "Manage" page.
           </div>
@@ -120,6 +131,17 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
+import SearchableSelect from '@/components/SearchableSelect.vue'
+
+const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const yearsList = computed(() => {
+  const current = new Date().getFullYear()
+  const years = []
+  for (let y = current - 5; y <= current + 5; y++) {
+    years.push(y)
+  }
+  return years
+})
 
 const history = ref([])
 const showModal = ref(false)
@@ -129,6 +151,10 @@ const editingId = ref(null)
 
 const categories = ref([])
 const lenders = ref([])
+
+const lenderOptions = computed(() => {
+  return lenders.value.map(l => ({ value: l.id, label: l.name }))
+})
 
 
 const filters = ref({

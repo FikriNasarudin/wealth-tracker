@@ -29,38 +29,58 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Original Loan Amount</div>
-        <div style="font-size: 2rem; font-weight: 700;">RM{{ formatCurrency(totalOriginal) }}</div>
-        <div v-if="originalChange !== null" :class="originalChange > 0 ? 'text-danger' : (originalChange < 0 ? 'text-success' : 'text-muted')" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-          <svg v-if="originalChange > 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-          <svg v-else-if="originalChange < 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
-          <span v-else style="margin-right: 0.25rem;">-</span>
-          {{ Math.abs(originalChange).toFixed(2) }}% vs last month
-        </div>
+        <template v-if="dataLoading">
+          <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
+          <div class="skeleton skeleton-text" style="width: 50%;"></div>
+        </template>
+        <template v-else>
+          <div style="font-size: 2rem; font-weight: 700;">RM{{ formatCurrency(totalOriginal) }}</div>
+          <div v-if="originalChange !== null" :class="originalChange > 0 ? 'text-danger' : (originalChange < 0 ? 'text-success' : 'text-muted')" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+            <svg v-if="originalChange > 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <svg v-else-if="originalChange < 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+            <span v-else style="margin-right: 0.25rem;">-</span>
+            {{ Math.abs(originalChange).toFixed(2) }}% vs last month
+          </div>
+        </template>
       </div>
+
       <div id="tour-remaining-principal" class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           Remaining Principal
           <Tooltip title="Remaining Principal" description="The total amount of debt you still owe to your lenders, not including future interest." example="RM100,000 borrowed - RM20,000 paid = RM80,000 Remaining" />
         </div>
-        <div style="font-size: 2rem; font-weight: 700; color: var(--danger);">RM{{ formatCurrency(totalRemaining) }}</div>
-        <div v-if="remainingChange !== null" :class="remainingChange > 0 ? 'text-danger' : (remainingChange < 0 ? 'text-success' : 'text-muted')" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-          <svg v-if="remainingChange > 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-          <svg v-else-if="remainingChange < 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
-          <span v-else style="margin-right: 0.25rem;">-</span>
-          {{ Math.abs(remainingChange).toFixed(2) }}% vs last month
-        </div>
+        <template v-if="dataLoading">
+          <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
+          <div class="skeleton skeleton-text" style="width: 45%;"></div>
+        </template>
+        <template v-else>
+          <div style="font-size: 2rem; font-weight: 700; color: var(--danger);">RM{{ formatCurrency(totalRemaining) }}</div>
+          <div v-if="remainingChange !== null" :class="remainingChange > 0 ? 'text-danger' : (remainingChange < 0 ? 'text-success' : 'text-muted')" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+            <svg v-if="remainingChange > 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <svg v-else-if="remainingChange < 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+            <span v-else style="margin-right: 0.25rem;">-</span>
+            {{ Math.abs(remainingChange).toFixed(2) }}% vs last month
+          </div>
+        </template>
       </div>
+
       <div id="tour-debt-reduced" class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           Total Debt Reduced
           <Tooltip title="Total Debt Reduced" description="The absolute amount of principal debt you have successfully paid off." example="RM100,000 Original - RM80,000 Remaining = RM20,000 Reduced" />
         </div>
-        <div style="font-size: 2rem; font-weight: 700; color: var(--success);">RM{{ formatCurrency(totalReduced) }}</div>
-        <div v-if="reducedChange !== null" :class="reducedChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-          <svg v-if="reducedChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-          <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
-          {{ Math.abs(reducedChange).toFixed(2) }}% vs last month
-        </div>
+        <template v-if="dataLoading">
+          <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
+          <div class="skeleton skeleton-text" style="width: 40%;"></div>
+        </template>
+        <template v-else>
+          <div style="font-size: 2rem; font-weight: 700; color: var(--success);">RM{{ formatCurrency(totalReduced) }}</div>
+          <div v-if="reducedChange !== null" :class="reducedChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+            <svg v-if="reducedChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+            {{ Math.abs(reducedChange).toFixed(2) }}% vs last month
+          </div>
+        </template>
       </div>
     </div>
     
@@ -70,29 +90,42 @@
            Debt-to-Income (DTI)
            <Tooltip title="Debt-to-Income Ratio" description="The percentage of your monthly income that goes towards paying minimum debt obligations." example="Ideally keep this below 36%." />
         </div>
-        <div style="font-size: 2rem; font-weight: 700;" :class="dtiRatio === null ? 'text-muted' : (dtiRatio <= 36 ? 'text-success' : (dtiRatio <= 43 ? 'text-warning' : 'text-danger'))">
-           {{ dtiRatio === null ? 'N/A' : dtiRatio.toFixed(1) + '%' }}
-        </div>
-        <div v-if="dtiRatio !== null" class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-          <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path v-if="dtiRatio <= 36" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          {{ dtiRatio <= 36 ? 'Healthy' : (dtiRatio <= 43 ? 'Elevated Risk' : 'High Risk') }}
-        </div>
+        <template v-if="dataLoading">
+          <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
+          <div class="skeleton skeleton-text" style="width: 50%;"></div>
+        </template>
+        <template v-else>
+          <div style="font-size: 2rem; font-weight: 700;" :class="dtiRatio === null ? 'text-muted' : (dtiRatio <= 36 ? 'text-success' : (dtiRatio <= 43 ? 'text-warning' : 'text-danger'))">
+             {{ dtiRatio === null ? 'N/A' : dtiRatio.toFixed(1) + '%' }}
+          </div>
+          <div v-if="dtiRatio !== null" class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+            <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path v-if="dtiRatio <= 36" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            {{ dtiRatio <= 36 ? 'Healthy' : (dtiRatio <= 43 ? 'Elevated Risk' : 'High Risk') }}
+          </div>
+        </template>
       </div>
+
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
            Cost of Debt (Avg Interest)
            <Tooltip title="Weighted Average Interest Rate" description="The average interest rate you are paying across all your active loans, weighted by how much you owe." example="A 10% loan of RM1,000 impacts this less than a 5% loan of RM100,000." />
         </div>
-        <div style="font-size: 2rem; font-weight: 700; color: var(--warning);">
-           {{ weightedAvgInterest.toFixed(2) }}%
-        </div>
-        <div class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-          <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          RM{{ formatCurrency(totalMonthlyDebtPayment) }}/mo Total Payment
-        </div>
+        <template v-if="dataLoading">
+          <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
+          <div class="skeleton skeleton-text" style="width: 45%;"></div>
+        </template>
+        <template v-else>
+          <div style="font-size: 2rem; font-weight: 700; color: var(--warning);">
+             {{ weightedAvgInterest.toFixed(2) }}%
+          </div>
+          <div class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+            <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            RM{{ formatCurrency(totalMonthlyDebtPayment) }}/mo Total Payment
+          </div>
+        </template>
       </div>
     </div>
 
@@ -275,8 +308,15 @@ const selectedYear = ref(d.getFullYear())
 const filterLender = ref('')
 const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
+const dataLoading = ref(true)
+
 const handleFilterChange = async () => {
-  await fetchData()
+  dataLoading.value = true
+  try {
+    await fetchData()
+  } finally {
+    dataLoading.value = false
+  }
 }
 
 const showModal = ref(false)
@@ -300,151 +340,156 @@ const form = ref(getInitialForm())
 const formatCurrency = (val) => Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const fetchData = async () => {
+  dataLoading.value = true
   try {
-    const res = await api.get(`/liabilities/snapshots/summary/?month=${selectedMonth.value}&year=${selectedYear.value}${filterLender.value ? '&lender_id=' + filterLender.value : ''}`)
-    totalOriginal.value = res.data.total_original_loan_amount
-    totalRemaining.value = res.data.total_remaining_principal
-    totalReduced.value = res.data.total_debt_reduced
-    prevTotalOriginal.value = res.data.prev_total_original_loan_amount
-    prevTotalRemaining.value = res.data.prev_total_remaining_principal
-    prevTotalReduced.value = res.data.prev_total_debt_reduced
-    distribution.value = res.data.distribution_by_category
-  } catch (e) {
-    console.error(e)
-  }
+    try {
+      const res = await api.get(`/liabilities/snapshots/summary/?month=${selectedMonth.value}&year=${selectedYear.value}${filterLender.value ? '&lender_id=' + filterLender.value : ''}`)
+      totalOriginal.value = res.data.total_original_loan_amount
+      totalRemaining.value = res.data.total_remaining_principal
+      totalReduced.value = res.data.total_debt_reduced
+      prevTotalOriginal.value = res.data.prev_total_original_loan_amount
+      prevTotalRemaining.value = res.data.prev_total_remaining_principal
+      prevTotalReduced.value = res.data.prev_total_debt_reduced
+      distribution.value = res.data.distribution_by_category
+    } catch (e) {
+      console.error(e)
+    }
 
-  try {
-    const allRes = await api.get(`/liabilities/snapshots/${filterLender.value ? '?lender_id=' + filterLender.value : ''}`)
-    const allSnaps = allRes.data
-    
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    const aggregated = Array(12).fill(null).map((_, i) => ({
-      month: months[i],
-      remainingPrincipal: 0,
-      originalAmount: 0
-    }))
-    
-    for (let m = 1; m <= 12; m++) {
-      const priorSnaps = allSnaps.filter(s => {
+    try {
+      const allRes = await api.get(`/liabilities/snapshots/${filterLender.value ? '?lender_id=' + filterLender.value : ''}`)
+      const allSnaps = allRes.data
+      
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      const aggregated = Array(12).fill(null).map((_, i) => ({
+        month: months[i],
+        remainingPrincipal: 0,
+        originalAmount: 0
+      }))
+      
+      for (let m = 1; m <= 12; m++) {
+        const priorSnaps = allSnaps.filter(s => {
+           const snapY = Number(s.year)
+           const snapM = Number(s.month)
+           if (snapY < selectedYear.value) return true;
+           if (snapY === selectedYear.value && snapM <= m) return true;
+           return false;
+        })
+        
+        const latestPerLiability = {}
+        priorSnaps.forEach(s => {
+          const key = `${s.category}_${s.lender}`
+          if (!latestPerLiability[key]) {
+            latestPerLiability[key] = s
+          } else {
+            const existing = latestPerLiability[key]
+            if (s.year > existing.year || (s.year === existing.year && s.month > existing.month)) {
+              latestPerLiability[key] = s
+            }
+          }
+        })
+        
+        let tRemaining = 0
+        let tOriginal = 0
+        Object.values(latestPerLiability).forEach(s => {
+          tRemaining += parseFloat(s.remaining_principal || 0)
+          tOriginal += parseFloat(s.original_loan_amount || 0)
+        })
+        
+        // Set values for all 12 months, we will truncate the array later
+        aggregated[m-1].remainingPrincipal = tRemaining
+        aggregated[m-1].originalAmount = tOriginal
+      }
+      
+      const currentRealMonth = (new Date()).getMonth() + 1
+      const currentRealYear = (new Date()).getFullYear()
+      
+      if (selectedYear.value === currentRealYear) {
+        yearlyData.value = aggregated.slice(0, currentRealMonth)
+      } else if (selectedYear.value > currentRealYear) {
+        yearlyData.value = []
+      } else {
+        yearlyData.value = aggregated
+      }
+
+      // Calculate Payoff Plans for selected month
+      const currentPriorSnaps = allSnaps.filter(s => {
          const snapY = Number(s.year)
          const snapM = Number(s.month)
          if (snapY < selectedYear.value) return true;
-         if (snapY === selectedYear.value && snapM <= m) return true;
+         if (snapY === selectedYear.value && snapM <= selectedMonth.value) return true;
          return false;
       })
       
-      const latestPerLiability = {}
-      priorSnaps.forEach(s => {
+      const latestPerLiabilitySelected = {}
+      currentPriorSnaps.forEach(s => {
         const key = `${s.category}_${s.lender}`
-        if (!latestPerLiability[key]) {
-          latestPerLiability[key] = s
+        if (!latestPerLiabilitySelected[key]) {
+          latestPerLiabilitySelected[key] = s
         } else {
-          const existing = latestPerLiability[key]
+          const existing = latestPerLiabilitySelected[key]
           if (s.year > existing.year || (s.year === existing.year && s.month > existing.month)) {
-            latestPerLiability[key] = s
+            latestPerLiabilitySelected[key] = s
           }
         }
       })
       
-      let tRemaining = 0
-      let tOriginal = 0
-      Object.values(latestPerLiability).forEach(s => {
-        tRemaining += parseFloat(s.remaining_principal || 0)
-        tOriginal += parseFloat(s.original_loan_amount || 0)
-      })
+      let sumPayments = 0;
+      let sumWeightedInterest = 0;
+      let sumPrincipalForInterest = 0;
       
-      // Set values for all 12 months, we will truncate the array later
-      aggregated[m-1].remainingPrincipal = tRemaining
-      aggregated[m-1].originalAmount = tOriginal
-    }
-    
-    const currentRealMonth = (new Date()).getMonth() + 1
-    const currentRealYear = (new Date()).getFullYear()
-    
-    if (selectedYear.value === currentRealYear) {
-      yearlyData.value = aggregated.slice(0, currentRealMonth)
-    } else if (selectedYear.value > currentRealYear) {
-      yearlyData.value = []
-    } else {
-      yearlyData.value = aggregated
-    }
-
-    // Calculate Payoff Plans for selected month
-    const currentPriorSnaps = allSnaps.filter(s => {
-       const snapY = Number(s.year)
-       const snapM = Number(s.month)
-       if (snapY < selectedYear.value) return true;
-       if (snapY === selectedYear.value && snapM <= selectedMonth.value) return true;
-       return false;
-    })
-    
-    const latestPerLiabilitySelected = {}
-    currentPriorSnaps.forEach(s => {
-      const key = `${s.category}_${s.lender}`
-      if (!latestPerLiabilitySelected[key]) {
-        latestPerLiabilitySelected[key] = s
-      } else {
-        const existing = latestPerLiabilitySelected[key]
-        if (s.year > existing.year || (s.year === existing.year && s.month > existing.month)) {
-          latestPerLiabilitySelected[key] = s
-        }
-      }
-    })
-    
-    let sumPayments = 0;
-    let sumWeightedInterest = 0;
-    let sumPrincipalForInterest = 0;
-    
-    payoffPlans.value = Object.values(latestPerLiabilitySelected)
-      .filter(s => parseFloat(s.remaining_principal) > 0)
-      .map(s => {
-        const lender = lenders.value.find(l => l.id === s.lender)
-        const interestRate = lender ? parseFloat(lender.interest_rate || 0) : 0
-        const principal = parseFloat(s.remaining_principal)
-        const payment = parseFloat(s.monthly_payment)
-        const original = parseFloat(s.original_loan_amount)
-        
-        sumPayments += payment;
-        sumWeightedInterest += (interestRate * principal);
-        sumPrincipalForInterest += principal;
-        
-        let months = 0
-        if (payment > 0) {
-          if (interestRate === 0) {
-            months = Math.ceil(principal / payment)
-          } else {
-            const r = interestRate / 100 / 12
-            if (payment > r * principal) {
-              months = Math.ceil(-Math.log(1 - (r * principal) / payment) / Math.log(1 + r))
+      payoffPlans.value = Object.values(latestPerLiabilitySelected)
+        .filter(s => parseFloat(s.remaining_principal) > 0)
+        .map(s => {
+          const lender = lenders.value.find(l => l.id === s.lender)
+          const interestRate = lender ? parseFloat(lender.interest_rate || 0) : 0
+          const principal = parseFloat(s.remaining_principal)
+          const payment = parseFloat(s.monthly_payment)
+          const original = parseFloat(s.original_loan_amount)
+          
+          sumPayments += payment;
+          sumWeightedInterest += (interestRate * principal);
+          sumPrincipalForInterest += principal;
+          
+          let months = 0
+          if (payment > 0) {
+            if (interestRate === 0) {
+              months = Math.ceil(principal / payment)
             } else {
-              months = 999 
+              const r = interestRate / 100 / 12
+              if (payment > r * principal) {
+                months = Math.ceil(-Math.log(1 - (r * principal) / payment) / Math.log(1 + r))
+              } else {
+                months = 999 
+              }
             }
           }
-        }
-        
-        return {
-          id: s.id,
-          lenderName: lender ? lender.name : 'Unknown',
-          interestRate,
-          remainingPrincipal: principal,
-          originalAmount: original,
-          monthlyPayment: payment,
-          monthsRemaining: months > 900 ? '∞' : months
-        }
-      }).sort((a, b) => b.interestRate - a.interestRate)
+          
+          return {
+            id: s.id,
+            lenderName: lender ? lender.name : 'Unknown',
+            interestRate,
+            remainingPrincipal: principal,
+            originalAmount: original,
+            monthlyPayment: payment,
+            monthsRemaining: months > 900 ? '∞' : months
+          }
+        }).sort((a, b) => b.interestRate - a.interestRate)
 
-    totalMonthlyDebtPayment.value = sumPayments;
-    weightedAvgInterest.value = sumPrincipalForInterest > 0 ? (sumWeightedInterest / sumPrincipalForInterest) : 0;
+      totalMonthlyDebtPayment.value = sumPayments;
+      weightedAvgInterest.value = sumPrincipalForInterest > 0 ? (sumWeightedInterest / sumPrincipalForInterest) : 0;
 
-  } catch (e) {
-    console.error(e)
-  }
-  
-  try {
-    const currentBudgetRes = await api.get(`/budgeting/transactions/summary/?month=${selectedMonth.value}&year=${selectedYear.value}`)
-    currentMonthIncome.value = currentBudgetRes.data.total_income || 0
-  } catch (e) {
-    console.error(e)
+    } catch (e) {
+      console.error(e)
+    }
+    
+    try {
+      const currentBudgetRes = await api.get(`/budgeting/transactions/summary/?month=${selectedMonth.value}&year=${selectedYear.value}`)
+      currentMonthIncome.value = currentBudgetRes.data.total_income || 0
+    } catch (e) {
+      console.error(e)
+    }
+  } finally {
+    dataLoading.value = false
   }
 }
 
@@ -503,22 +548,27 @@ const submitSnapshot = async () => {
 }
 
 onMounted(async () => {
+  dataLoading.value = true
   try {
-    const res = await api.get('/liabilities/snapshots/')
-    if (res.data && res.data.length > 0) {
-      const latest = res.data.reduce((prev, current) => {
-        if (current.year > prev.year) return current;
-        if (current.year === prev.year && current.month > prev.month) return current;
-        return prev;
-      })
-      selectedMonth.value = latest.month
-      selectedYear.value = latest.year
+    try {
+      const res = await api.get('/liabilities/snapshots/')
+      if (res.data && res.data.length > 0) {
+        const latest = res.data.reduce((prev, current) => {
+          if (current.year > prev.year) return current;
+          if (current.year === prev.year && current.month > prev.month) return current;
+          return prev;
+        })
+        selectedMonth.value = latest.month
+        selectedYear.value = latest.year
+      }
+    } catch(e) {
+      console.error(e)
     }
-  } catch(e) {
-    console.error(e)
-  }
 
-  await fetchOptions()
-  await fetchData()
+    await fetchOptions()
+    await fetchData()
+  } finally {
+    dataLoading.value = false
+  }
 })
 </script>

@@ -203,7 +203,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
                                         subscription=s,
                                         amount=s.amount,
                                         date=datetime.date(req_y, req_m, log_day),
-                                        description=f"Auto-logged: {s.name}" + (f" (Account: {s.payment_account})" if s.payment_account else "")
+                                        description=f"Auto-logged: {s.name}" + (f" (Account: {s.payment_account})" if s.payment_account else ""),
+                                        payment_account=s.payment_account
                                     )
 
         qs = self.get_queryset()

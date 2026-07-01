@@ -9,7 +9,9 @@
         <select v-model="selectedMonth" class="form-input" style="width: 120px;" @change="fetchData">
           <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
         </select>
-        <input v-model="selectedYear" type="number" min="2000" max="2100" class="form-input" style="width: 100px;" @change="fetchData" />
+        <select v-model="selectedYear" class="form-input" style="width: 95px;" @change="fetchData">
+          <option v-for="y in yearsList" :key="y" :value="y">{{ y }}</option>
+        </select>
         <button class="btn btn-primary" @click="openModal()">+ Add New Item</button>
         <router-link to="/budgeting" class="btn btn-secondary">Back to Budgeting</router-link>
       </div>
@@ -83,10 +85,11 @@
         
         <div class="form-group">
           <label class="form-label">Category</label>
-          <select v-model="form.category" class="form-input">
-            <option :value="null">Uncategorized</option>
-            <option v-for="c in categories.filter(c => c.type === form.type)" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
+            <SearchableSelect 
+              v-model="form.category" 
+              :options="categoryOptions" 
+              placeholder="Search category..." 
+            />
         </div>
         
         <div class="form-group">
@@ -122,18 +125,11 @@
           </div>
           <div class="form-group" style="flex: 1;">
             <label class="form-label">Debit Account (Optional)</label>
-            <select v-model="form.payment_account" class="form-input">
-              <option :value="null">None (Cash/Other)</option>
-              <optgroup label="Bank Accounts">
-                <option v-for="b in bankAccounts" :key="'bank_'+b.id" :value="b.name">{{ b.name }}</option>
-              </optgroup>
-              <optgroup label="Credit Cards">
-                <option v-for="c in creditCardsList" :key="'cc_'+c.id" :value="c.name">{{ c.name }}</option>
-              </optgroup>
-              <optgroup label="Loans / Other Liabilities">
-                <option v-for="l in otherLiabilitiesList" :key="'liab_'+l.id" :value="l.name">{{ l.name }}</option>
-              </optgroup>
-            </select>
+              <SearchableSelect 
+              v-model="form.payment_account" 
+              :options="debitAccountOptions" 
+              placeholder="Search debit account..." 
+            />
           </div>
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading">
@@ -148,11 +144,21 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
+import SearchableSelect from '@/components/SearchableSelect.vue'
 
 const d = new Date()
 const selectedMonth = ref(d.getMonth() + 1)
 const selectedYear = ref(d.getFullYear())
 const monthsList = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+const yearsList = computed(() => {
+  const current = new Date().getFullYear()
+  const years = []
+  for (let y = current - 5; y <= current + 5; y++) {
+    years.push(y)
+  }
+  return years
+})
 
 const subscriptions = ref([])
 const categories = ref([])
@@ -171,6 +177,29 @@ const currentMonthKey = computed(() => `${selectedYear.value}-${String(selectedM
 
 const filteredSubs = computed(() => {
   return subscriptions.value.filter(s => s.status === statusTab.value)
+})
+
+const categoryOptions = computed(() => {
+  return [
+    { value: null, label: 'Uncategorized' },
+    ...categories.value
+      .filter(c => c.type === form.value.type)
+      .map(c => ({ value: c.id, label: c.name }))
+  ]
+})
+
+const debitAccountOptions = computed(() => {
+  const list = [{ value: null, label: 'None (Cash/Other)' }]
+  bankAccounts.value.forEach(b => {
+    list.push({ value: b.name, label: `${b.name} (Bank Account)` })
+  })
+  creditCardsList.value.forEach(c => {
+    list.push({ value: c.name, label: `${c.name} (Credit Card)` })
+  })
+  otherLiabilitiesList.value.forEach(l => {
+    list.push({ value: l.name, label: `${l.name} (Loan/Other)` })
+  })
+  return list
 })
 
 const formatCurrency = (val) => Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })

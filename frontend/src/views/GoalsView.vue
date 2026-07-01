@@ -1,11 +1,11 @@
 <template>
   <div class="main-content">
-    <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+    <header class="flex-responsive" style="margin-bottom: 2rem; gap: 1rem;">
       <div>
         <h1 style="font-weight: 600;">Financial Goals</h1>
         <p class="text-muted">Track your progress towards your financial milestones.</p>
       </div>
-      <div style="display: flex; gap: 1rem; align-items: center;">
+      <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
         <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
           <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           Help

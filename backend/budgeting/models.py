@@ -56,6 +56,42 @@ class Transaction(models.Model):
     date = models.DateField()
     description = models.TextField(blank=True, null=True)
     subscription = models.ForeignKey(Subscription, on_delete=models.SET_NULL, null=True, blank=True, related_name='logs')
+    payment_account = models.CharField(max_length=255, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        # If it's a new expense paid with a credit card, automatically increase the outstanding balance
+        if is_new and self.type == 'EXPENSE' and self.payment_account:
+            try:
+                from liabilities.models import Lender, LiabilitySnapshot
+                lender = Lender.objects.filter(
+                    user=self.user, 
+                    name=self.payment_account, 
+                    category__name__iexact='credit cards',
+                    is_active=True
+                ).first()
+                
+                if lender:
+                    m = self.date.month
+                    y = self.date.year
+                    snapshot, created = LiabilitySnapshot.objects.get_or_create(
+                        user=self.user,
+                        month=m,
+                        year=y,
+                        lender=lender,
+                        defaults={
+                            'category': lender.category,
+                            'original_loan_amount': lender.original_loan_amount,
+                            'remaining_principal': 0,
+                            'monthly_payment': 0
+                        }
+                    )
+                    snapshot.remaining_principal += self.amount
+                    snapshot.save()
+            except Exception as e:
+                print("Failed to sync credit card balance:", e)
 
     def __str__(self):
         return f"{self.user} - {self.name} - {self.amount}"

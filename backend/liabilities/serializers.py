@@ -10,7 +10,7 @@ class LiabilityCategorySerializer(serializers.ModelSerializer):
 class LenderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lender
-        fields = '__all__'
+        fields = ['id', 'name', 'category', 'original_loan_amount', 'interest_rate', 'is_default', 'is_active', 'start_date', 'end_date']
         extra_kwargs = {'user': {'read_only': True}}
 
 class LiabilitySnapshotSerializer(serializers.ModelSerializer):

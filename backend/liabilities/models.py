@@ -21,6 +21,8 @@ class Lender(models.Model):
     interest_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
 
     def __str__(self):
         return self.name

@@ -1,25 +1,27 @@
 <template>
   <div class="main-content">
-    <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+    <header class="flex-responsive" style="margin-bottom: 2rem; gap: 1rem;">
       <div>
         <h1 style="font-weight: 600;">Assets Overview</h1>
         <p class="text-muted">Track your portfolio allocation and profits.</p>
       </div>
-      <div style="display: flex; gap: 1rem; align-items: center;">
+      <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
         <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
           <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           Help
         </button>
-        <span class="text-muted">Period:</span>
+        <span class="text-muted" style="font-size: 0.875rem;">Period:</span>
         <select v-model="selectedMonth" class="form-input" style="width: 120px;" @change="handleFilterChange">
           <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
         </select>
-        <input v-model="selectedYear" type="number" min="2000" max="2100" class="form-input" style="width: 100px;" @change="handleFilterChange" />
-        <select v-model="filterPlatform" class="form-input" style="width: 150px;" @change="handleFilterChange">
+        <select v-model="selectedYear" class="form-input" style="width: 95px;" @change="handleFilterChange">
+          <option v-for="y in yearsList" :key="y" :value="y">{{ y }}</option>
+        </select>
+        <select v-model="filterPlatform" class="form-input" style="width: 140px;" @change="handleFilterChange">
           <option value="">All Platforms</option>
           <option v-for="p in platforms" :key="p.id" :value="p.id">{{ p.name }}</option>
         </select>
-        <button id="tour-add-asset" class="btn btn-primary" @click="showModal = true" style="margin-left: 1rem;">+ Add Snapshot</button>
+        <button id="tour-add-asset" class="btn btn-primary" @click="showModal = true">+ Add Snapshot</button>
       </div>
     </header>
 
@@ -29,45 +31,72 @@
           Total Invested
           <Tooltip title="Total Invested" description="The principal amount of money you have actually put into your investments." example="RM10,000 deposited to a broker" />
         </div>
-        <div style="font-size: 2rem; font-weight: 700;">RM{{ formatCurrency(totalInvested) }}</div>
-        <div v-if="investedChange !== null" :class="investedChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-          <svg v-if="investedChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-          <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
-          {{ Math.abs(investedChange).toFixed(2) }}% vs last month
-        </div>
+        <template v-if="dataLoading">
+          <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
+          <div class="skeleton skeleton-text" style="width: 50%;"></div>
+        </template>
+        <template v-else>
+          <div style="font-size: 2rem; font-weight: 700;">RM{{ formatCurrency(totalInvested) }}</div>
+          <div v-if="investedChange !== null" :class="investedChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+            <svg v-if="investedChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+            {{ Math.abs(investedChange).toFixed(2) }}% vs last month
+          </div>
+        </template>
       </div>
+
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Current Balance</div>
-        <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(totalBalance) }}</div>
-        <div v-if="balanceChange !== null" :class="balanceChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-          <svg v-if="balanceChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-          <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
-          {{ Math.abs(balanceChange).toFixed(2) }}% vs last month
-        </div>
+        <template v-if="dataLoading">
+          <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
+          <div class="skeleton skeleton-text" style="width: 45%;"></div>
+        </template>
+        <template v-else>
+          <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(totalBalance) }}</div>
+          <div v-if="balanceChange !== null" :class="balanceChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+            <svg v-if="balanceChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+            {{ Math.abs(balanceChange).toFixed(2) }}% vs last month
+          </div>
+        </template>
       </div>
+
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           Absolute Profit
           <Tooltip title="Absolute Profit" description="The raw monetary difference between your current balance and total invested." example="RM12,000 Balance - RM10,000 Invested = RM2,000 Profit" />
         </div>
-        <div style="font-size: 2rem; font-weight: 700;" :class="absoluteProfit >= 0 ? 'text-success' : 'text-danger'">RM{{ formatCurrency(absoluteProfit) }}</div>
-        <div v-if="profitChange !== null" :class="profitChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-          <svg v-if="profitChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-          <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
-          {{ Math.abs(profitChange).toFixed(2) }}% vs last month
-        </div>
+        <template v-if="dataLoading">
+          <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
+          <div class="skeleton skeleton-text" style="width: 40%;"></div>
+        </template>
+        <template v-else>
+          <div style="font-size: 2rem; font-weight: 700;" :class="absoluteProfit >= 0 ? 'text-success' : 'text-danger'">RM{{ formatCurrency(absoluteProfit) }}</div>
+          <div v-if="profitChange !== null" :class="profitChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+            <svg v-if="profitChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+            {{ Math.abs(profitChange).toFixed(2) }}% vs last month
+          </div>
+        </template>
       </div>
+
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           True ROI (%)
           <Tooltip title="True Return on Investment" description="Your absolute profit expressed as a percentage of your total invested amount. The ultimate metric of portfolio performance." example="(2,000 / 10,000) * 100 = 20%" />
         </div>
-        <div style="font-size: 2rem; font-weight: 700;" :class="profitPercentage >= 0 ? 'text-success' : 'text-danger'">{{ profitPercentage }}%</div>
-        <div v-if="percentageChange !== null" :class="percentageChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-          <svg v-if="percentageChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-          <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
-          {{ Math.abs(percentageChange).toFixed(2) }}% vs last month
-        </div>
+        <template v-if="dataLoading">
+          <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
+          <div class="skeleton skeleton-text" style="width: 45%;"></div>
+        </template>
+        <template v-else>
+          <div style="font-size: 2rem; font-weight: 700;" :class="profitPercentage >= 0 ? 'text-success' : 'text-danger'">{{ profitPercentage }}%</div>
+          <div v-if="percentageChange !== null" :class="percentageChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
+            <svg v-if="percentageChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+            {{ Math.abs(percentageChange).toFixed(2) }}% vs last month
+          </div>
+        </template>
       </div>
     </div>
     
@@ -83,7 +112,7 @@
       </div>
     </div>
 
-    <div id="tour-asset-charts" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <div id="tour-asset-charts" class="grid-2col" style="margin-bottom: 2rem;">
       <div class="card">
         <h3 style="margin-bottom: 1rem; font-weight: 600;">By Category</h3>
         <div v-if="byCategory.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No data available</div>
@@ -137,10 +166,11 @@
         
         <div class="form-group">
           <label class="form-label">Platform</label>
-          <select v-model="form.platformId" class="form-input" required>
-            <option value="" disabled>Select a Platform</option>
-            <option v-for="p in platforms" :key="p.id" :value="p.id">{{ p.name }}</option>
-          </select>
+          <SearchableSelect 
+            v-model="form.platformId" 
+            :options="platformOptions" 
+            placeholder="Search platform..." 
+          />
           <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">
             New platforms and categories can be created in the "Manage" page.
           </div>
@@ -173,6 +203,7 @@ import BarChart from '@/components/BarChart.vue'
 import GraphLine from '@/components/GraphLine.vue'
 import Tooltip from '@/components/Tooltip.vue'
 import { driver } from 'driver.js'
+import SearchableSelect from '@/components/SearchableSelect.vue'
 
 const startTour = () => {
   const driverObj = driver({
@@ -197,6 +228,7 @@ const prevProfitPercentage = ref(0)
 const byCategory = ref([])
 const byPlatform = ref([])
 const yearlyData = ref([])
+const dataLoading = ref(true)
 
 const calculateChange = (current, previous) => {
   if (!previous) return null;
@@ -234,9 +266,22 @@ const selectedYear = ref(d.getFullYear())
 const filterPlatform = ref('')
 const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
+const yearsList = computed(() => {
+  const current = new Date().getFullYear()
+  const years = []
+  for (let y = current - 5; y <= current + 5; y++) {
+    years.push(y)
+  }
+  return years
+})
+
 const handleFilterChange = async () => {
-  await fetchData()
-  await fetchYearlyData()
+  dataLoading.value = true
+  try {
+    await Promise.all([fetchData(), fetchYearlyData()])
+  } finally {
+    dataLoading.value = false
+  }
 }
 
 const monthlyLabels = computed(() => yearlyData.value.map(d => d.month))
@@ -304,6 +349,10 @@ const getInitialForm = () => {
 }
 
 const form = ref(getInitialForm())
+
+const platformOptions = computed(() => {
+  return platforms.value.map(p => ({ value: p.id, label: p.name }))
+})
 
 const formatCurrency = (val) => Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -419,23 +468,28 @@ const submitSnapshot = async () => {
 }
 
 onMounted(async () => {
+  dataLoading.value = true
   try {
-    const res = await api.get('/assets/snapshots/')
-    if (res.data && res.data.length > 0) {
-      const latest = res.data.reduce((prev, current) => {
-        if (current.year > prev.year) return current;
-        if (current.year === prev.year && current.month > prev.month) return current;
-        return prev;
-      })
-      selectedMonth.value = latest.month
-      selectedYear.value = latest.year
+    try {
+      const res = await api.get('/assets/snapshots/')
+      if (res.data && res.data.length > 0) {
+        const latest = res.data.reduce((prev, current) => {
+          if (current.year > prev.year) return current;
+          if (current.year === prev.year && current.month > prev.month) return current;
+          return prev;
+        })
+        selectedMonth.value = latest.month
+        selectedYear.value = latest.year
+      }
+    } catch(e) {
+      console.error(e)
     }
-  } catch(e) {
-    console.error(e)
-  }
 
-  await fetchData()
-  await fetchOptions()
-  await fetchYearlyData()
+    await fetchData()
+    await fetchOptions()
+    await fetchYearlyData()
+  } finally {
+    dataLoading.value = false
+  }
 })
 </script>
