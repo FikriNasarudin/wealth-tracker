@@ -61,7 +61,7 @@
             <tr v-if="filteredHistory.length === 0">
               <td colspan="6" class="text-center text-muted" style="text-align: center;">No snapshots match your filters.</td>
             </tr>
-            <tr v-for="item in filteredHistory" :key="item.id">
+            <tr v-for="item in paginatedHistory" :key="item.id">
               <td>{{ item.month.toString().padStart(2, '0') }}/{{ item.year }}</td>
               <td>{{ item.category_name }}</td>
               <td>{{ item.platform_name }}</td>
@@ -77,6 +77,7 @@
           </tbody>
         </table>
       </div>
+      <Pagination v-model="currentPage" :totalItems="filteredHistory.length" :itemsPerPage="itemsPerPage" />
     </div>
 
     <!-- Modal -->
@@ -128,10 +129,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import SearchableSelect from '@/components/SearchableSelect.vue'
+import Pagination from '@/components/Pagination.vue'
 
 const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const yearsList = computed(() => {
@@ -177,6 +179,18 @@ const filteredHistory = computed(() => {
     return true
   })
 })
+
+const currentPage = ref(1)
+const itemsPerPage = 10
+
+const paginatedHistory = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return filteredHistory.value.slice(start, start + itemsPerPage)
+})
+
+watch([filters, () => filteredHistory.value.length], () => {
+  currentPage.value = 1
+}, { deep: true })
 
 const getInitialForm = () => {
   const d = new Date()

@@ -7,13 +7,7 @@
           <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           Help
         </button>
-        <span class="text-muted" style="font-size: 0.875rem;">Viewing Period:</span>
-        <select v-model="selectedMonth" class="form-input" style="width: 120px;" @change="fetchData">
-          <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
-        </select>
-        <select v-model="selectedYear" class="form-input" style="width: 95px;" @change="fetchData">
-          <option v-for="y in yearsList" :key="y" :value="y">{{ y }}</option>
-        </select>
+        <SearchableSelect v-model="selectedPeriod" :options="trendOptions" @change="fetchData" placeholder="Select Period" style="width: 140px;" />
       </div>
     </header>
 
@@ -154,7 +148,10 @@
 
     <div class="grid-2col" style="margin-bottom: 2rem;">
       <div id="tour-breakdown" class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Net Worth Breakdown</h3>
+        <h3 style="margin-bottom: 1rem; font-weight: 600;">
+          Net Worth Breakdown
+          <Tooltip title="Net Worth Breakdown" description="Visual allocation of your liquid assets, investments, and liabilities to see your overall wealth distribution." example="Checking accounts, Stock portfolio, and Credit card debt" />
+        </h3>
         <div style="display: flex; justify-content: center; align-items: center; min-height: 250px;">
           <PieChart 
             :labels="['Liquid Assets', 'Invested Assets', 'Liabilities (Negative)']" 
@@ -209,7 +206,17 @@
 
     <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Income vs Expenses (Last 6 Months)</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
+            Income vs Expenses Trend
+            <Tooltip title="Income vs Expenses" description="Historical comparison of your monthly earnings against your monthly spending to track savings trends." example="Salary and business income vs rent and grocer expenses" />
+          </h3>
+          <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+            <SearchableSelect v-model="incomeExpenseStart" :options="trendOptions" @change="fetchData" placeholder="Start Month" />
+            <span style="color: #94A3B8; font-size: 0.8rem; margin: 0 0.1rem;">to</span>
+            <SearchableSelect v-model="incomeExpenseEnd" :options="trendOptions" @change="fetchData" placeholder="End Month" />
+          </div>
+        </div>
         <div style="height: 300px;">
           <BarChart v-if="trendLabels.length > 0" :labels="trendLabels" :datasets="trendDatasets" />
         </div>
@@ -218,16 +225,36 @@
       
     <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Total Assets Over Time</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
+            Total Assets Over Time
+            <Tooltip title="Asset History" description="Historical trend of your total assets (liquid and invested) to track wealth growth over time." example="Includes cash balances and broker portfolio value" />
+          </h3>
+          <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+            <SearchableSelect v-model="assetsOverTimeStart" :options="trendOptions" placeholder="Start Month" />
+            <span style="color: #94A3B8; font-size: 0.8rem; margin: 0 0.1rem;">to</span>
+            <SearchableSelect v-model="assetsOverTimeEnd" :options="trendOptions" placeholder="End Month" />
+          </div>
+        </div>
         <div style="height: 300px;">
-          <GraphLine v-if="yearlyData.length > 0" :labels="monthlyLabels" :datasets="assetDatasets" />
+          <GraphLine v-if="assetsOverTimeData.length > 0" :labels="assetsOverTimeLabels" :datasets="assetDatasets" />
         </div>
       </div>
 
       <div class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Asset Progress</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
+            Asset Progress
+            <Tooltip title="Asset Progress" description="The proportional growth and target achievements of your portfolio assets." example="Growth of stocks vs savings accounts" />
+          </h3>
+          <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+            <SearchableSelect v-model="assetProgressStart" :options="trendOptions" placeholder="Start Month" />
+            <span style="color: #94A3B8; font-size: 0.8rem; margin: 0 0.1rem;">to</span>
+            <SearchableSelect v-model="assetProgressEnd" :options="trendOptions" placeholder="End Month" />
+          </div>
+        </div>
         <div style="height: 300px;">
-          <GraphLine v-if="yearlyData.length > 0" :labels="monthlyLabels" :datasets="progressDatasets" />
+          <GraphLine v-if="assetProgressData.length > 0" :labels="assetProgressLabels" :datasets="progressDatasets" />
         </div>
       </div>
     </div>
@@ -267,25 +294,101 @@ const startTour = () => {
   driverObj.drive();
 }
 
+import SearchableSelect from '@/components/SearchableSelect.vue'
+
 const d = new Date()
 const selectedMonth = ref(d.getMonth() + 1)
 const selectedYear = ref(d.getFullYear())
-const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-
-const yearsList = computed(() => {
-  const current = new Date().getFullYear()
-  const years = []
-  for (let y = current - 5; y <= current + 5; y++) {
-    years.push(y)
+const selectedPeriod = computed({
+  get() {
+    return `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`
+  },
+  set(val) {
+    if (val) {
+      const [y, m] = val.split('-')
+      selectedYear.value = Number(y)
+      selectedMonth.value = Number(m)
+    }
   }
-  return years
 })
+const currentYear = d.getFullYear()
+
+const incomeExpenseStart = ref(`${currentYear}-01`)
+const incomeExpenseEnd = ref(`${currentYear}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+const assetsOverTimeStart = ref(`${currentYear}-01`)
+const assetsOverTimeEnd = ref(`${currentYear}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+const assetProgressStart = ref(`${currentYear}-01`)
+const assetProgressEnd = ref(`${currentYear}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+
+const trendOptions = ref([])
+
+const generateTrendOptions = (oldestYear, oldestMonth) => {
+  const options = []
+  const currentY = d.getFullYear()
+  const currentM = d.getMonth() + 1
+  
+  let startYear = oldestYear || (currentY - 2)
+  let startMonth = oldestMonth || 1
+  
+  const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  
+  let y = startYear
+  let m = startMonth
+  
+  while (y < currentY || (y === currentY && m <= currentM)) {
+    const val = `${y}-${String(m).padStart(2, '0')}`
+    const lbl = `${shortMonths[m - 1]} ${y}`
+    options.push({ value: val, label: lbl })
+    m++
+    if (m > 12) {
+      m = 1
+      y++
+    }
+  }
+  
+  trendOptions.value = options
+}
+
+const fetchOldestDataDate = async () => {
+  try {
+    const [assetsRes, liabRes] = await Promise.all([
+      api.get('/assets/snapshots/'),
+      api.get('/liabilities/snapshots/')
+    ])
+    
+    let oldestY = null
+    let oldestM = null
+    
+    const updateOldest = (item) => {
+      const itemY = Number(item.year)
+      const itemM = Number(item.month)
+      if (!oldestY || itemY < oldestY || (itemY === oldestY && itemM < oldestM)) {
+        oldestY = itemY
+        oldestM = itemM
+      }
+    }
+    
+    if (assetsRes.data && assetsRes.data.length > 0) {
+      assetsRes.data.forEach(updateOldest)
+    }
+    if (liabRes.data && liabRes.data.length > 0) {
+      liabRes.data.forEach(updateOldest)
+    }
+    
+    generateTrendOptions(oldestY, oldestM)
+  } catch(e) {
+    console.error(e)
+    generateTrendOptions()
+  }
+}
+
+const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 const totalAssets = ref(0)
 const totalLiquidAssets = ref(0)
 const profitPercentage = ref(0)
 const totalLiabilities = ref(0)
-const yearlyData = ref([])
+const rawSnapshots = ref([])
 const trendData = ref([])
 
 const currentMonthIncome = ref(0)
@@ -315,27 +418,60 @@ const formatCurrency = (val) => {
   return Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-const monthlyLabels = computed(() => yearlyData.value.map(d => d.month))
-
-const compoundDatasets = computed(() => [
-  { 
-    label: 'Total Invested', 
-    data: yearlyData.value.map(d => d.totalInvested), 
-    backgroundColor: '#3B82F6',
-    borderRadius: 4
-  },
-  { 
-    label: 'Profit/Loss', 
-    data: yearlyData.value.map(d => d.profit), 
-    backgroundColor: yearlyData.value.map(d => d.profit >= 0 ? '#10B981' : '#EF4444'),
-    borderRadius: 4
+const processSnapshotData = (snapshots, startDateStr, endDateStr) => {
+  if (!startDateStr || !endDateStr) return []
+  const [startYear, startMonth] = startDateStr.split('-').map(Number)
+  const [endYear, endMonth] = endDateStr.split('-').map(Number)
+  
+  const list = []
+  let currYear = startYear
+  let currMonth = startMonth
+  const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  
+  while (currYear < endYear || (currYear === endYear && currMonth <= endMonth)) {
+    list.push({
+      year: currYear,
+      month: currMonth,
+      monthLabel: `${shortMonths[currMonth - 1]} ${currYear}`,
+      totalInvested: 0,
+      totalBalance: 0,
+      profit: 0
+    })
+    currMonth++
+    if (currMonth > 12) {
+      currMonth = 1
+      currYear++
+    }
   }
-])
+  
+  snapshots.forEach(snap => {
+    const match = list.find(l => l.year === Number(snap.year) && l.month === Number(snap.month))
+    if (match) {
+      match.totalInvested += parseFloat(snap.total_invested || 0)
+      match.totalBalance += parseFloat(snap.current_balance || 0)
+    }
+  })
+  
+  list.forEach(item => {
+    if (item.totalInvested > 0 || item.totalBalance > 0) {
+      item.profit = item.totalBalance - item.totalInvested
+    }
+  })
+  return list.map(item => ({
+    month: item.monthLabel,
+    totalInvested: item.totalInvested,
+    totalBalance: item.totalBalance,
+    profit: item.profit
+  }))
+}
 
+// 1. Assets Over Time computed properties
+const assetsOverTimeData = computed(() => processSnapshotData(rawSnapshots.value, assetsOverTimeStart.value, assetsOverTimeEnd.value))
+const assetsOverTimeLabels = computed(() => assetsOverTimeData.value.map(d => d.month))
 const assetDatasets = computed(() => [
   { 
     label: 'Total Balance', 
-    data: yearlyData.value.map(d => d.totalBalance), 
+    data: assetsOverTimeData.value.map(d => d.totalBalance), 
     fill: true, 
     backgroundColor: 'rgba(59, 130, 246, 0.2)', 
     borderColor: '#3B82F6', 
@@ -343,10 +479,13 @@ const assetDatasets = computed(() => [
   }
 ])
 
+// 2. Asset Progress computed properties
+const assetProgressData = computed(() => processSnapshotData(rawSnapshots.value, assetProgressStart.value, assetProgressEnd.value))
+const assetProgressLabels = computed(() => assetProgressData.value.map(d => d.month))
 const progressDatasets = computed(() => [
   { 
     label: 'Total Invested', 
-    data: yearlyData.value.map(d => d.totalInvested), 
+    data: assetProgressData.value.map(d => d.totalInvested), 
     fill: true, 
     stepped: true, 
     backgroundColor: 'rgba(16, 185, 129, 0.2)', 
@@ -354,7 +493,7 @@ const progressDatasets = computed(() => [
   },
   { 
     label: 'Current Balance', 
-    data: yearlyData.value.map(d => d.totalBalance), 
+    data: assetProgressData.value.map(d => d.totalBalance), 
     fill: false,
     stepped: true, 
     backgroundColor: '#3B82F6', 
@@ -362,6 +501,7 @@ const progressDatasets = computed(() => [
   }
 ])
 
+// 3. Income vs Expense Trend computed properties
 const trendLabels = computed(() => trendData.value.map(d => d.label))
 const trendDatasets = computed(() => [
   { 
@@ -426,7 +566,7 @@ const fetchData = async () => {
 
   try {
     const cashRes = await api.get(`/banking/accounts/summary/?month=${month}&year=${year}`)
-    totalLiquidAssets.value = cashRes.data.total_balance || 0
+    totalLiquidAssets.value = parseFloat(cashRes.data.total_balance) || 0
   } catch (e) {
     console.error(e)
   }
@@ -442,44 +582,12 @@ const fetchData = async () => {
 
   try {
     const [trendRes, snapRes] = await Promise.all([
-      api.get(`/budgeting/transactions/trend/?year=${year}`),
-      api.get(`/assets/snapshots/?year=${year}`)
+      api.get(`/budgeting/transactions/trend/?start_date=${incomeExpenseStart.value}&end_date=${incomeExpenseEnd.value}`),
+      api.get('/assets/snapshots/')
     ])
     
     trendData.value = trendRes.data
-    
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    const aggregated = Array(12).fill(null).map((_, i) => ({
-      month: months[i],
-      totalInvested: 0,
-      totalBalance: 0,
-      profit: 0
-    }))
-    
-    const yearSnaps = snapRes.data
-    
-    yearSnaps.forEach(snap => {
-      const mIdx = snap.month - 1
-      aggregated[mIdx].totalInvested += parseFloat(snap.total_invested)
-      aggregated[mIdx].totalBalance += parseFloat(snap.current_balance)
-    })
-    
-    aggregated.forEach(a => {
-      if (a.totalInvested > 0) {
-        a.profit = a.totalBalance - a.totalInvested
-      }
-    })
-    
-    const currentRealMonth = (new Date()).getMonth() + 1
-    const currentRealYear = (new Date()).getFullYear()
-    
-    if (year === currentRealYear) {
-      yearlyData.value = aggregated.slice(0, currentRealMonth)
-    } else if (year > currentRealYear) {
-      yearlyData.value = []
-    } else {
-      yearlyData.value = aggregated
-    }
+    rawSnapshots.value = snapRes.data
   } catch(e) {
     console.error(e)
   } finally {
@@ -489,13 +597,33 @@ const fetchData = async () => {
 
 onMounted(async () => {
   try {
-    const res = await api.get('/assets/snapshots/')
-    if (res.data && res.data.length > 0) {
-      const latest = res.data.reduce((prev, current) => {
+    const [assetsRes, bankingRes] = await Promise.all([
+      api.get('/assets/snapshots/'),
+      api.get('/banking/snapshots/')
+    ])
+    
+    let latest = null
+    
+    if (assetsRes.data && assetsRes.data.length > 0) {
+      latest = assetsRes.data.reduce((prev, current) => {
         if (current.year > prev.year) return current;
         if (current.year === prev.year && current.month > prev.month) return current;
         return prev;
       })
+    }
+    
+    if (bankingRes.data && bankingRes.data.length > 0) {
+      const latestBanking = bankingRes.data.reduce((prev, current) => {
+        if (current.year > prev.year) return current;
+        if (current.year === prev.year && current.month > prev.month) return current;
+        return prev;
+      })
+      if (!latest || latestBanking.year > latest.year || (latestBanking.year === latest.year && latestBanking.month > latest.month)) {
+        latest = latestBanking
+      }
+    }
+    
+    if (latest) {
       selectedMonth.value = latest.month
       selectedYear.value = latest.year
     }
@@ -503,6 +631,30 @@ onMounted(async () => {
     console.error(e)
   }
 
+  await fetchOldestDataDate()
   await fetchData()
 })
 </script>
+
+<style scoped>
+:deep(.trend-select-wrapper .searchable-select) {
+  width: 95px !important;
+}
+:deep(.trend-select-wrapper .select-trigger) {
+  height: 28px !important;
+  padding: 0.2rem 0.4rem !important;
+  background: transparent !important;
+  border: none !important;
+  font-size: 0.8rem !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+:deep(.trend-select-wrapper .chevron-arrow) {
+  font-size: 0.6rem !important;
+  margin-left: 0.15rem !important;
+}
+:deep(.trend-select-wrapper .dropdown-menu) {
+  width: 140px !important;
+  font-size: 0.8rem !important;
+}
+</style>

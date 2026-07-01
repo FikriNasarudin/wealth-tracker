@@ -18,6 +18,19 @@
       </form>
     </Modal>
 
+    <!-- Edit Category Modal -->
+    <Modal :show="showEditCategoryModal" title="Edit Category" @close="cancelEditCategory">
+      <form @submit.prevent="saveCategory" v-if="editingCategory">
+        <div class="form-group">
+          <label class="form-label">Category Name</label>
+          <input v-model="editingCategory.editName" type="text" class="form-input" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading.cat">
+          {{ loading.cat ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </form>
+    </Modal>
+
     <!-- Add Lender Modal -->
     <Modal :show="showAddLenderModal" title="Add Lender / Credit Card" @close="showAddLenderModal = false">
       <form @submit.prevent="addLender">
@@ -66,33 +79,33 @@
       <!-- Categories Section -->
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="font-weight: 600; margin: 0;">Categories</h3>
+          <h3 style="font-weight: 600; margin: 0;">
+            Categories
+            <Tooltip title="Liability Categories" description="Broad categories of debt like Credit Cards, Mortgages, Student Loans, Personal Loans." example="Mortgage, Credit Cards, Car Loan" />
+          </h3>
           <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;" @click="showAddCategoryModal = true">+ Add Category</button>
         </div>
 
         <ul style="list-style: none; padding: 0;">
           <li v-for="cat in categories" :key="cat.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.5rem;">
             <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
-              <span v-if="!cat.isEditing" :class="{ 'text-muted': !cat.is_active }">{{ cat.name }}</span>
-              <input v-else v-model="cat.editName" type="text" class="form-input" style="padding: 0.25rem 0.5rem; margin-right: 0.5rem;" @keyup.enter="saveCategory(cat)" />
+              <span :class="{ 'text-muted': !cat.is_active }">{{ cat.name }}</span>
               
               <span v-if="!cat.is_active" class="text-danger" style="font-size: 0.75rem; border: 1px solid var(--danger); padding: 0.1rem 0.3rem; border-radius: 4px;">Archived</span>
               <span v-if="cat.is_default" class="text-muted" style="font-size: 0.75rem; border: 1px solid var(--text-muted); padding: 0.1rem 0.3rem; border-radius: 4px;">Default</span>
             </div>
             <div style="display: flex; gap: 0.5rem;">
               <template v-if="!cat.is_default">
-                <template v-if="!cat.isEditing">
-                  <button @click="editCategory(cat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Edit</button>
-                  <button @click="toggleCategoryStatus(cat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" :class="{ 'text-success': !cat.is_active, 'text-danger': cat.is_active }">
-                    {{ cat.is_active ? 'Archive' : 'Unarchive' }}
-                  </button>
-                </template>
-                <template v-else>
-                  <button @click="saveCategory(cat)" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Save</button>
-                  <button @click="cat.isEditing = false" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Cancel</button>
-                </template>
+                <button @click="openEditCategory(cat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Edit</button>
+                <button @click="toggleCategoryStatus(cat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" :class="{ 'text-success': !cat.is_active, 'text-danger': cat.is_active }">
+                  {{ cat.is_active ? 'Archive' : 'Unarchive' }}
+                </button>
               </template>
             </div>
+          </li>
+          <li v-if="categories.length === 0" style="padding: 1.5rem; text-align: center;">
+            <span style="font-size: 1.5rem;">🏷️</span>
+            <p class="text-muted" style="margin: 0.5rem 0 0; font-size: 0.875rem;">No categories yet. Create one (e.g. Mortgages, Auto Loans) before adding lenders.</p>
           </li>
         </ul>
       </div>
@@ -100,11 +113,18 @@
       <!-- Lenders Section -->
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="font-weight: 600; margin: 0;">Lenders / Credit Cards</h3>
+          <h3 style="font-weight: 600; margin: 0;">
+            Lenders / Credit Cards
+            <Tooltip title="Lenders & Credit Cards" description="Individual entities or banks you owe money to, along with their interest rates." example="Maybank Visa, CIMB Housing Loan" />
+          </h3>
           <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;" @click="showAddLenderModal = true">+ Add Lender / Card</button>
         </div>
 
         <ul style="list-style: none; padding: 0;">
+          <li v-if="lenders.length === 0" style="padding: 1.5rem; text-align: center;">
+            <span style="font-size: 1.5rem;">🏦</span>
+            <p class="text-muted" style="margin: 0.5rem 0 0; font-size: 0.875rem;">No lenders yet. Add a bank, credit card, or loan provider (e.g. Maybank, CIMB) to start tracking your debts.</p>
+          </li>
           <li v-for="len in lenders" :key="len.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.5rem;">
             <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 250px; flex-wrap: wrap;">
               <div>
@@ -174,6 +194,7 @@ import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import SearchableSelect from '@/components/SearchableSelect.vue'
+import Tooltip from '@/components/Tooltip.vue'
 
 const categories = ref([])
 const lenders = ref([])
@@ -192,6 +213,8 @@ const showAddLenderModal = ref(false)
 
 const showEditLenderModal = ref(false)
 const editingLender = ref(null)
+const showEditCategoryModal = ref(false)
+const editingCategory = ref(null)
 
 const activeCategories = computed(() => categories.value.filter(c => c.is_active))
 
@@ -284,16 +307,32 @@ const addLender = async () => {
   } catch (e) { console.error(e) } finally { loading.value.len = false }
 }
 
-const editCategory = (cat) => {
-  cat.isEditing = true
+const openEditCategory = (cat) => {
+  editingCategory.value = {
+    ...cat,
+    editName: cat.name
+  }
+  showEditCategoryModal.value = true
 }
 
-const saveCategory = async (cat) => {
+const cancelEditCategory = () => {
+  showEditCategoryModal.value = false
+  editingCategory.value = null
+}
+
+const saveCategory = async () => {
+  const cat = editingCategory.value
+  if (!cat || !cat.editName.trim()) return
+  loading.value.cat = true
   try {
     await api.patch(`/liabilities/categories/${cat.id}/`, { name: cat.editName })
-    cat.name = cat.editName
-    cat.isEditing = false
-  } catch (e) { console.error(e) }
+    cancelEditCategory()
+    await fetchCategories()
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loading.value.cat = false
+  }
 }
 
 const toggleCategoryStatus = async (cat) => {

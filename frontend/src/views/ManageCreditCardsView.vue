@@ -31,47 +31,59 @@
       </form>
     </Modal>
 
+    <!-- Edit Credit Card Modal -->
+    <Modal :show="showEditModal" title="Edit Credit Card" @close="cancelEditCard">
+      <form @submit.prevent="saveCard">
+        <div class="form-group">
+          <label class="form-label">Card Name</label>
+          <input v-model="editingCardName" type="text" class="form-input" placeholder="Card Name" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Credit Limit (RM)</label>
+          <input v-model="editingCardLimit" type="number" step="0.01" class="form-input" placeholder="Limit" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Interest Rate % (Optional)</label>
+          <input v-model="editingCardInterest" type="number" step="0.01" class="form-input" placeholder="Interest %" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current Outstanding (RM)</label>
+          <input v-model="editingCardBalance" type="number" step="0.01" class="form-input" placeholder="Outstanding Balance" title="Update Current Balance" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading">
+          {{ loading ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </form>
+    </Modal>
+
     <div class="card" style="max-width: 800px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h3 style="font-weight: 600; margin: 0;">Your Credit Cards</h3>
+        <h3 style="font-weight: 600; margin: 0;">
+          Your Credit Cards
+          <Tooltip title="Your Credit Cards" description="List of your active credit cards. Track their limits, statement cycles, and current balances." example="Maybank Visa, CIMB Mastercard" />
+        </h3>
         <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;" @click="showAddModal = true">+ Add Card</button>
       </div>
       <ul style="list-style: none; padding: 0;">
         <li v-if="cards.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No credit cards added yet.</li>
         <li v-for="card in cards" :key="card.id" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 1rem;">
           <div style="display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 250px;">
-            <template v-if="!card.isEditing">
-              <div>
-                <div :class="{ 'text-muted': !card.is_active }" style="font-weight: 600; font-size: 1.1rem;">{{ card.name }}</div>
-                <div class="text-muted" style="font-size: 0.875rem;">
-                  Limit: RM{{ Number(card.original_loan_amount).toLocaleString(undefined, {minimumFractionDigits:2}) }} 
-                  <span v-if="card.interest_rate > 0">| Interest: {{ card.interest_rate }}%</span>
-                  <span v-if="card.currentBalance !== undefined">| Outstanding: RM{{ Number(card.currentBalance).toLocaleString(undefined, {minimumFractionDigits:2}) }}</span>
-                </div>
+            <div>
+              <div :class="{ 'text-muted': !card.is_active }" style="font-weight: 600; font-size: 1.1rem;">{{ card.name }}</div>
+              <div class="text-muted" style="font-size: 0.875rem;">
+                Limit: RM{{ Number(card.original_loan_amount).toLocaleString(undefined, {minimumFractionDigits:2}) }} 
+                <span v-if="card.interest_rate > 0">| Interest: {{ card.interest_rate }}%</span>
+                <span v-if="card.currentBalance !== undefined">| Outstanding: RM{{ Number(card.currentBalance).toLocaleString(undefined, {minimumFractionDigits:2}) }}</span>
               </div>
-            </template>
-            <template v-else>
-              <div style="display: flex; gap: 0.5rem; flex: 1; flex-wrap: wrap; width: 100%;">
-                <input v-model="card.editName" type="text" class="form-input" style="flex: 2; min-width: 150px;" placeholder="Card Name" />
-                <input v-model="card.editLimit" type="number" step="0.01" class="form-input" style="flex: 1; min-width: 80px;" placeholder="Limit" />
-                <input v-model="card.editInterest" type="number" step="0.01" class="form-input" style="flex: 1; min-width: 80px;" placeholder="Interest %" />
-                <input v-model="card.editBalance" type="number" step="0.01" class="form-input" style="flex: 1; min-width: 100px;" placeholder="Outstanding Balance" title="Update Current Balance" />
-              </div>
-            </template>
+            </div>
             
             <span v-if="!card.is_active" class="text-danger" style="font-size: 0.75rem; border: 1px solid var(--danger); padding: 0.1rem 0.3rem; border-radius: 4px;">Archived</span>
           </div>
           <div style="display: flex; gap: 0.5rem;">
-            <template v-if="!card.isEditing">
-              <button @click="editCard(card)" class="btn btn-secondary" style="padding: 0.25rem 0.75rem;">Edit</button>
-              <button @click="toggleCardStatus(card)" class="btn btn-secondary" style="padding: 0.25rem 0.75rem;" :class="{ 'text-success': !card.is_active, 'text-danger': card.is_active }">
-                {{ card.is_active ? 'Archive' : 'Restore' }}
-              </button>
-            </template>
-            <template v-else>
-              <button @click="saveCard(card)" class="btn btn-primary" style="padding: 0.25rem 0.75rem;">Save</button>
-              <button @click="card.isEditing = false" class="btn btn-secondary" style="padding: 0.25rem 0.75rem;">Cancel</button>
-            </template>
+            <button @click="openEditCard(card)" class="btn btn-secondary" style="padding: 0.25rem 0.75rem;">Edit</button>
+            <button @click="toggleCardStatus(card)" class="btn btn-secondary" style="padding: 0.25rem 0.75rem;" :class="{ 'text-success': !card.is_active, 'text-danger': card.is_active }">
+              {{ card.is_active ? 'Archive' : 'Restore' }}
+            </button>
           </div>
         </li>
       </ul>
@@ -83,6 +95,7 @@
 import { ref, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
+import Tooltip from '@/components/Tooltip.vue'
 
 const creditCardCategoryId = ref(null)
 const cards = ref([])
@@ -92,6 +105,12 @@ const newCardInterest = ref('')
 const newCardBalance = ref('')
 const loading = ref(false)
 const showAddModal = ref(false)
+const showEditModal = ref(false)
+const editingCardId = ref(null)
+const editingCardName = ref('')
+const editingCardLimit = ref('')
+const editingCardInterest = ref('')
+const editingCardBalance = ref('')
 
 const setupCreditCardCategory = async () => {
   try {
@@ -135,11 +154,6 @@ const fetchCards = async () => {
         const currentBalance = snap ? snap.remaining_principal : 0
         return {
           ...c,
-          isEditing: false,
-          editName: c.name,
-          editLimit: c.original_loan_amount || '',
-          editInterest: c.interest_rate || '',
-          editBalance: currentBalance || '',
           currentBalance: currentBalance
         }
       })
@@ -187,38 +201,54 @@ const addCard = async () => {
   }
 }
 
-const editCard = (card) => {
-  card.isEditing = true
+const openEditCard = (card) => {
+  editingCardId.value = card.id
+  editingCardName.value = card.name
+  editingCardLimit.value = card.original_loan_amount || ''
+  editingCardInterest.value = card.interest_rate || ''
+  editingCardBalance.value = card.currentBalance || ''
+  showEditModal.value = true
 }
 
-const saveCard = async (card) => {
+const cancelEditCard = () => {
+  showEditModal.value = false
+  editingCardId.value = null
+  editingCardName.value = ''
+  editingCardLimit.value = ''
+  editingCardInterest.value = ''
+  editingCardBalance.value = ''
+}
+
+const saveCard = async () => {
+  if (!editingCardId.value || !editingCardName.value.trim() || !editingCardLimit.value) return
+  loading.value = true
   try {
-    await api.patch(`/liabilities/lenders/${card.id}/`, {
-      name: card.editName,
-      original_loan_amount: card.editLimit,
-      interest_rate: card.editInterest || 0
+    await api.patch(`/liabilities/lenders/${editingCardId.value}/`, {
+      name: editingCardName.value,
+      original_loan_amount: editingCardLimit.value,
+      interest_rate: editingCardInterest.value || 0
     })
     
     // Update outstanding balance snapshot if provided
-    if (card.editBalance !== '') {
+    if (editingCardBalance.value !== '') {
       const d = new Date()
       const m = d.getMonth() + 1
       const y = d.getFullYear()
       // try to fetch existing snapshot to update, or create a new one
       try {
-        const snapsRes = await api.get(`/liabilities/snapshots/?month=${m}&year=${y}&lender=${card.id}`)
+        const snapsRes = await api.get(`/liabilities/snapshots/?month=${m}&year=${y}&lender=${editingCardId.value}`)
         if (snapsRes.data.length > 0) {
           await api.patch(`/liabilities/snapshots/${snapsRes.data[0].id}/`, {
-            remaining_principal: card.editBalance
+            remaining_principal: editingCardBalance.value
           })
         } else {
           await api.post('/liabilities/snapshots/', {
             month: m,
             year: y,
             category: creditCardCategoryId.value,
-            lender: card.id,
-            original_loan_amount: card.editLimit,
-            remaining_principal: card.editBalance,
+            lender: editingCardId.value,
+            original_loan_amount: editingCardLimit.value,
+            remaining_principal: editingCardBalance.value,
             monthly_payment: 0
           })
         }
@@ -227,15 +257,13 @@ const saveCard = async (card) => {
       }
     }
 
-    card.name = card.editName
-    card.original_loan_amount = card.editLimit
-    card.interest_rate = card.editInterest || 0
-    if (card.editBalance !== '') card.currentBalance = card.editBalance
-    card.editBalance = card.currentBalance || ''
-    card.isEditing = false
+    cancelEditCard()
+    await fetchCards()
   } catch (e) {
     console.error("Failed to save card", e)
     alert("Failed to save credit card.")
+  } finally {
+    loading.value = false
   }
 }
 

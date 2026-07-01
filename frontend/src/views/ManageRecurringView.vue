@@ -35,10 +35,14 @@
            </tr>
          </thead>
          <tbody>
-           <tr v-if="filteredSubs.length === 0">
-             <td colspan="6" class="text-muted" style="text-align: center; padding: 2rem;">No items found.</td>
-           </tr>
-           <tr v-for="sub in filteredSubs" :key="sub.id" style="border-bottom: 1px solid var(--border-color);">
+            <tr v-if="filteredSubs.length === 0">
+              <td colspan="6" style="text-align: center; padding: 3rem 2rem;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔁</div>
+                <div style="font-weight: 600; margin-bottom: 0.4rem;">No recurring items yet</div>
+                <div class="text-muted" style="font-size: 0.875rem; max-width: 380px; margin: 0 auto;">Track subscriptions, loan payments, utilities, and other recurring expenses or income. You'll be reminded to log them each month in the Budgeting section.</div>
+              </td>
+            </tr>
+           <tr v-for="sub in paginatedSubs" :key="sub.id" style="border-bottom: 1px solid var(--border-color);">
              <td style="padding: 0.75rem 0; font-weight: 500;">{{ sub.name }}</td>
              <td style="padding: 0.75rem 0; color: var(--text-muted);">{{ sub.category_name || '-' }}</td>
              <td style="padding: 0.75rem 0;">
@@ -71,6 +75,7 @@
            </tr>
          </tbody>
        </table>
+       <Pagination v-model="currentPage" :totalItems="filteredSubs.length" :itemsPerPage="itemsPerPage" />
     </div>
 
     <Modal :show="showModal" :title="form.id ? 'Edit Item' : 'Add Item'" @close="showModal = false">
@@ -141,10 +146,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import SearchableSelect from '@/components/SearchableSelect.vue'
+import Pagination from '@/components/Pagination.vue'
 
 const d = new Date()
 const selectedMonth = ref(d.getMonth() + 1)
@@ -177,6 +183,18 @@ const currentMonthKey = computed(() => `${selectedYear.value}-${String(selectedM
 
 const filteredSubs = computed(() => {
   return subscriptions.value.filter(s => s.status === statusTab.value)
+})
+
+const currentPage = ref(1)
+const itemsPerPage = 10
+
+const paginatedSubs = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return filteredSubs.value.slice(start, start + itemsPerPage)
+})
+
+watch([statusTab, () => filteredSubs.value.length], () => {
+  currentPage.value = 1
 })
 
 const categoryOptions = computed(() => {

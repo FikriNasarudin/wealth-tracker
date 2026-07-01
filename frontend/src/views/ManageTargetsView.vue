@@ -27,43 +27,79 @@
        <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
          <thead>
            <tr style="border-bottom: 1px solid var(--border-color);">
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Target On</th>
+             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Category / Name</th>
              <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Type</th>
              <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Limit ({{ currentMonthStr }})</th>
+             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Source</th>
              <th style="padding: 0.75rem 0; text-align: right; color: var(--text-muted); font-weight: 500;">Actions</th>
            </tr>
          </thead>
          <tbody>
-           <tr v-if="targets.length === 0">
-             <td colspan="4" class="text-muted" style="text-align: center; padding: 2rem;">No targets found.</td>
+           <tr v-if="mergedTargetRows.length === 0">
+             <td colspan="5" style="text-align: center; padding: 3rem 2rem;">
+               <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎯</div>
+               <div style="font-weight: 600; margin-bottom: 0.4rem;">No budget targets yet</div>
+               <div class="text-muted" style="font-size: 0.875rem; max-width: 360px; margin: 0 auto;">Set spending limits or income goals for expense categories or names. Targets help you see how well you're sticking to your budget each month.</div>
+             </td>
            </tr>
-           <tr v-for="t in targets" :key="t.id" style="border-bottom: 1px solid var(--border-color);">
+
+           <tr v-for="row in paginatedTargets" :key="row.key"
+             style="border-bottom: 1px solid var(--border-color);"
+             :style="row.isDefault ? 'opacity: 0.65;' : ''"
+           >
+             <!-- Category / Name -->
              <td style="padding: 0.75rem 0; font-weight: 500;">
-               <span v-if="t.category" class="text-muted" style="font-size: 0.8em; margin-right: 0.5rem; border: 1px solid var(--border-color); padding: 0.1rem 0.3rem; border-radius: 4px;">CATEGORY</span>
-               <span v-else class="text-muted" style="font-size: 0.8em; margin-right: 0.5rem; border: 1px solid var(--border-color); padding: 0.1rem 0.3rem; border-radius: 4px;">NAME</span>
-               {{ t.category ? t.category_name : t.name }}
+               <span v-if="row.isNameTarget" class="text-muted" style="font-size: 0.75em; margin-right: 0.4rem; border: 1px solid var(--border-color); padding: 0.1rem 0.3rem; border-radius: 4px;">NAME</span>
+               {{ row.label }}
              </td>
+
+             <!-- Type -->
              <td style="padding: 0.75rem 0;">
-               <span :class="t.type === 'INCOME' ? 'text-success' : 'text-danger'">{{ t.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
+               <span :class="row.type === 'INCOME' ? 'text-success' : 'text-danger'">{{ row.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
              </td>
+
+             <!-- Limit amount -->
              <td style="padding: 0.75rem 0;">
-                 RM{{ formatCurrency(t.amount) }}
-                 <div v-if="t.start_date || t.end_date" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
-                   Active: {{ t.start_date || 'Forever' }} to {{ t.end_date || 'Forever' }}
-                 </div>
-                 <div v-if="t.status === 'ARCHIVED'" style="font-size: 0.75rem; color: var(--warning); margin-top: 0.25rem;">(Target Archived)</div>
-                 <div v-if="t.paused_months && t.paused_months.includes(currentMonthKey)" style="font-size: 0.75rem; color: var(--warning); margin-top: 0.25rem;">(Target Paused this month)</div>
+               RM{{ formatCurrency(row.amount) }}
+               <div v-if="row.target && (row.target.start_date || row.target.end_date)" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                 Active: {{ row.target.start_date || 'Forever' }} → {{ row.target.end_date || 'Forever' }}
+               </div>
+               <div v-if="row.target && row.target.status === 'ARCHIVED'" style="font-size: 0.75rem; color: var(--warning); margin-top: 0.2rem;">(Archived)</div>
+               <div v-if="row.target && row.target.paused_months && row.target.paused_months.includes(currentMonthKey)" style="font-size: 0.75rem; color: var(--warning); margin-top: 0.2rem;">(Paused this month)</div>
              </td>
-             <td style="padding: 0.75rem 0; text-align: right; display: flex; justify-content: flex-end; gap: 0.5rem;">
-               <button v-if="t.status === 'ACTIVE' && !(t.paused_months && t.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="pauseTargetMonth(t.id)">Pause Limit</button>
-               <button v-if="t.status === 'ACTIVE' && (t.paused_months && t.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="resumeTargetMonth(t.id)">Resume Limit</button>
-               
-               <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="openModal(t)">Edit</button>
-               <button class="btn btn-danger" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="deleteTarget(t.id)">Delete</button>
+
+             <!-- Source badge -->
+             <td style="padding: 0.75rem 0;">
+               <span v-if="row.isDefault"
+                 style="font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-weight: 600; background: rgba(255,255,255,0.07); color: var(--text-muted); border: 1px solid var(--border-color);"
+               >🔁 Default</span>
+               <span v-else
+                 style="font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-weight: 600; background: rgba(99,102,241,0.15); color: var(--accent-primary); border: 1px solid rgba(99,102,241,0.3);"
+               >✏️ Custom</span>
+             </td>
+
+             <!-- Actions -->
+             <td style="padding: 0.75rem 0; text-align: right;">
+               <div style="display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap;">
+                 <template v-if="row.isDefault">
+                   <button class="btn btn-primary" style="padding: 0.2rem 0.55rem; font-size: 0.75rem;" @click="openModalForCategory(row.categoryObj)">Set Custom</button>
+                 </template>
+                 <template v-else-if="row.target">
+                   <button v-if="row.target.status === 'ACTIVE' && !(row.target.paused_months && row.target.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="pauseTargetMonth(row.target.id)">Pause</button>
+                   <button v-if="row.target.status === 'ACTIVE' && (row.target.paused_months && row.target.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="resumeTargetMonth(row.target.id)">Resume</button>
+                   <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="openModal(row.target)">Edit</button>
+                   <button class="btn btn-danger" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="deleteTarget(row.target.id)">Delete</button>
+                 </template>
+                 <template v-else>
+                   <button class="btn btn-secondary" style="padding: 0.2rem 0.55rem; font-size: 0.75rem;" @click="openModal(row.target)">Edit</button>
+                   <button class="btn btn-danger" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="deleteTarget(row.target.id)">Delete</button>
+                 </template>
+               </div>
              </td>
            </tr>
          </tbody>
        </table>
+       <Pagination v-model="currentPageTargets" :totalItems="mergedTargetRows.length" :itemsPerPage="itemsPerPage" />
     </div>
 
     <div v-if="activeTab === 'CATEGORIES'" class="card" style="margin-bottom: 2rem;">
@@ -79,7 +115,7 @@
            <tr v-if="categories.length === 0">
              <td colspan="3" class="text-muted" style="text-align: center; padding: 2rem;">No categories found.</td>
            </tr>
-           <tr v-for="c in categories" :key="c.id" style="border-bottom: 1px solid var(--border-color);">
+           <tr v-for="c in paginatedCategories" :key="c.id" style="border-bottom: 1px solid var(--border-color);">
              <td style="padding: 0.75rem 0; font-weight: 500;">{{ c.name }}</td>
              <td style="padding: 0.75rem 0;">
                <span :class="c.type === 'INCOME' ? 'text-success' : 'text-danger'">{{ c.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
@@ -94,6 +130,7 @@
            </tr>
          </tbody>
        </table>
+       <Pagination v-model="currentPageCategories" :totalItems="categories.length" :itemsPerPage="itemsPerPage" />
     </div>
 
     <Modal :show="showModal" :title="form.id ? 'Edit Target' : 'Add Target'" @close="showModal = false">
@@ -117,11 +154,24 @@
             <option v-for="c in categories.filter(c => c.type === form.type)" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
           <input v-else v-model="form.name" type="text" class="form-input" required placeholder="e.g. Starbucks" />
+
+          <!-- Recurring info hint when a category is selected -->
+          <div v-if="targetMode === 'category' && form.category && recurringInCategory !== null"
+            style="margin-top: 0.6rem; padding: 0.6rem 0.75rem; border-radius: 0.5rem; font-size: 0.82rem; display: flex; align-items: center; gap: 0.5rem;"
+            :style="recurringInCategory > 0 ? 'background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3);' : 'background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);'"
+          >
+            <span style="font-size: 1rem;">🔁</span>
+            <span v-if="recurringInCategory > 0">
+              <strong style="color: var(--accent-primary);">RM{{ formatCurrency(recurringInCategory) }}/mo</strong>
+              <span class="text-muted"> already committed via Recurring Items in this category. Default target pre-filled.</span>
+            </span>
+            <span v-else class="text-muted">No recurring items in this category yet.</span>
+          </div>
         </div>
 
         <div class="form-group">
           <label class="form-label">Target Amount (RM)</label>
-          <input v-model="form.amount" type="number" step="0.01" class="form-input" required />
+          <input v-model="form.amount" type="number" step="0.01" class="form-input" required placeholder="e.g. 500.00" />
         </div>
         
         <div style="display: flex; gap: 1rem;">
@@ -163,9 +213,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
+import Pagination from '@/components/Pagination.vue'
 
 const d = new Date()
 const selectedMonth = ref(d.getMonth() + 1)
@@ -181,7 +232,120 @@ const activeTab = ref('TARGETS')
 const showModal = ref(false)
 const showCatModal = ref(false)
 
+const subscriptions = ref([])
+
 const form = ref({ id: null, category: null, name: '', type: 'EXPENSE', amount: '', start_date: null, end_date: null })
+
+// Sum of monthly-equivalent recurring items for the currently selected category in the form
+const recurringInCategory = computed(() => {
+  if (!form.value.category || targetMode.value !== 'category') return null
+  const matched = subscriptions.value.filter(
+    s => s.category === form.value.category && s.type === form.value.type && s.status === 'ACTIVE'
+  )
+  if (matched.length === 0) return 0
+  return matched.reduce((sum, s) => {
+    const monthly = s.billing_cycle === 'MONTHLY' ? parseFloat(s.amount) : parseFloat(s.amount) / 12
+    return sum + monthly
+  }, 0)
+})
+
+// Build a per-category lookup: categoryId → monthly recurring total
+const recurringByCategory = computed(() => {
+  const map = {}
+  subscriptions.value
+    .filter(s => s.status === 'ACTIVE')
+    .forEach(s => {
+      if (!s.category) return
+      const monthly = s.billing_cycle === 'MONTHLY' ? parseFloat(s.amount) : parseFloat(s.amount) / 12
+      map[s.category] = (map[s.category] || 0) + monthly
+    })
+  return map
+})
+
+// Merged list: explicit custom targets + default rows for categories with recurring but no custom target
+const mergedTargetRows = computed(() => {
+  const rows = []
+
+  // 1. All explicit targets (Custom)
+  targets.value.forEach(t => {
+    rows.push({
+      key: `custom-${t.id}`,
+      label: t.category ? t.category_name : t.name,
+      type: t.type,
+      amount: parseFloat(t.amount),
+      isDefault: false,
+      isNameTarget: !t.category,
+      target: t,
+      categoryObj: null
+    })
+  })
+
+  // 2. Categories with recurring items but NO explicit category target yet → Default rows
+  const categoriesWithCustomTarget = new Set(
+    targets.value.filter(t => t.category).map(t => t.category)
+  )
+  categories.value.forEach(cat => {
+    const recurringTotal = recurringByCategory.value[cat.id] || 0
+    if (recurringTotal > 0 && !categoriesWithCustomTarget.has(cat.id)) {
+      rows.push({
+        key: `default-${cat.id}`,
+        label: cat.name,
+        type: cat.type,
+        amount: recurringTotal,
+        isDefault: true,
+        isNameTarget: false,
+        target: null,
+        categoryObj: cat
+      })
+    }
+  })
+
+  // Sort: Custom first, then Default; alphabetically within each group
+  rows.sort((a, b) => {
+    if (a.isDefault !== b.isDefault) return a.isDefault ? 1 : -1
+    return a.label.localeCompare(b.label)
+  })
+
+  return rows
+})
+
+const currentPageTargets = ref(1)
+const currentPageCategories = ref(1)
+const itemsPerPage = 10
+
+const paginatedTargets = computed(() => {
+  const start = (currentPageTargets.value - 1) * itemsPerPage
+  return mergedTargetRows.value.slice(start, start + itemsPerPage)
+})
+
+const paginatedCategories = computed(() => {
+  const start = (currentPageCategories.value - 1) * itemsPerPage
+  return categories.value.slice(start, start + itemsPerPage)
+})
+
+watch(() => mergedTargetRows.value.length, () => {
+  currentPageTargets.value = 1
+})
+
+watch(() => categories.value.length, () => {
+  currentPageCategories.value = 1
+})
+
+watch(activeTab, () => {
+  currentPageTargets.value = 1
+  currentPageCategories.value = 1
+})
+
+// Auto-fill form amount when a category is chosen (prefill with recurring total)
+watch(() => form.value.category, (catId) => {
+  if (!catId || targetMode.value !== 'category') return
+  const total = recurringByCategory.value[catId] || 0
+  if (total > 0 && !form.value.id) {
+    // Only auto-fill for new targets (not edits)
+    form.value.amount = total.toFixed(2)
+  }
+})
+
 const catForm = ref({ id: null, type: 'EXPENSE', name: '' })
 
 const currentMonthStr = computed(() => `${monthsList[selectedMonth.value - 1]} ${selectedYear.value}`)
@@ -203,6 +367,15 @@ const fetchCategories = async () => {
   try {
     const res = await api.get('/budgeting/categories/')
     categories.value = res.data
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const fetchSubscriptions = async () => {
+  try {
+    const res = await api.get('/budgeting/subscriptions/')
+    subscriptions.value = res.data
   } catch (e) {
     console.error(e)
   }
@@ -251,6 +424,22 @@ const openModal = (t = null) => {
   } else {
     targetMode.value = 'category'
     form.value = { id: null, category: categories.value.filter(c => c.type === 'EXPENSE')[0]?.id || null, name: '', type: 'EXPENSE', amount: '', start_date: null, end_date: null }
+  }
+  showModal.value = true
+}
+
+// Opens Add Target modal pre-filled for a specific category (used from Default rows)
+const openModalForCategory = (cat) => {
+  targetMode.value = 'category'
+  const recurringTotal = recurringByCategory.value[cat.id] || 0
+  form.value = {
+    id: null,
+    category: cat.id,
+    name: '',
+    type: cat.type,
+    amount: recurringTotal > 0 ? recurringTotal.toFixed(2) : '',
+    start_date: null,
+    end_date: null
   }
   showModal.value = true
 }
@@ -329,5 +518,6 @@ const deleteCategory = async (id) => {
 onMounted(() => {
   fetchData()
   fetchCategories()
+  fetchSubscriptions()
 })
 </script>

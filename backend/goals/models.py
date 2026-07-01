@@ -10,6 +10,7 @@ class FinancialGoal(models.Model):
     color = models.CharField(max_length=20, default='#3B82F6') # Default blue
     icon = models.CharField(max_length=50, blank=True, null=True)
     is_completed = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.name} - {self.current_amount}/{self.target_amount}"

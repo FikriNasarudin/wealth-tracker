@@ -23,69 +23,127 @@
     <AIAdvisorCard v-if="enableAI" dashboardType="BUDGETING" :month="selectedMonth" :year="selectedYear" style="margin-bottom: 2rem;" />
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+      <!-- Income Card -->
       <div class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500; display: flex; justify-content: space-between;">
-          <span>Total Income</span>
-          <span v-if="forecastIncome > 0 && !dataLoading">Target: RM{{ formatCurrency(forecastIncome) }}</span>
-        </div>
+        <div class="text-muted" style="margin-bottom: 0.75rem; font-weight: 500; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">Total Income</div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
           <div class="skeleton skeleton-text" style="width: 50%;"></div>
         </template>
         <template v-else>
-          <div style="font-size: 2rem; font-weight: 700; color: var(--success); margin-bottom: 0.5rem;">RM{{ formatCurrency(income) }}</div>
-          <div v-if="forecastIncome > 0" style="width: 100%; height: 6px; background: var(--bg-background); border-radius: 3px; overflow: hidden;">
-            <div :style="{
-              width: Math.min((income / forecastIncome) * 100, 100) + '%',
-              height: '100%',
-              background: 'var(--success)'
-            }"></div>
+          <!-- Actual vs Target scorecard -->
+          <div style="display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0; margin-bottom: 0.75rem;">
+            <div>
+              <div class="text-muted" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Actual</div>
+              <div style="font-size: 1.75rem; font-weight: 700; color: var(--success);">RM{{ formatCurrency(income) }}</div>
+            </div>
+            <div style="background: var(--border-color);"></div>
+            <div style="padding-left: 1rem;">
+              <div class="text-muted" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Target</div>
+              <div style="font-size: 1.75rem; font-weight: 700;" :class="forecastIncome > 0 ? '' : 'text-muted'">
+                {{ forecastIncome > 0 ? 'RM' + formatCurrency(forecastIncome) : '—' }}
+              </div>
+            </div>
           </div>
+          <!-- Progress bar -->
+          <div v-if="forecastIncome > 0">
+            <div style="width: 100%; height: 6px; background: var(--bg-background); border-radius: 3px; overflow: hidden; margin-bottom: 0.4rem;">
+              <div :style="{
+                width: Math.min((income / forecastIncome) * 100, 100) + '%',
+                height: '100%',
+                background: income >= forecastIncome ? 'var(--success)' : 'var(--accent-primary)',
+                transition: 'width 0.4s ease'
+              }"></div>
+            </div>
+            <div class="text-muted" style="font-size: 0.78rem;">
+              {{ Math.min((income / forecastIncome) * 100, 100).toFixed(0) }}% of target reached
+            </div>
+          </div>
+          <div v-else class="text-muted" style="font-size: 0.8rem;">No income target set. Add a recurring income in <router-link to="/manage-recurring" style="color: var(--accent-primary);">Recurring Items</router-link>.</div>
         </template>
       </div>
 
+      <!-- Expenses Card -->
       <div class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500; display: flex; justify-content: space-between;">
-          <span>Total Expenses</span>
-          <span v-if="forecastExpenses > 0 && !dataLoading">Target: RM{{ formatCurrency(forecastExpenses) }}</span>
-        </div>
+        <div class="text-muted" style="margin-bottom: 0.75rem; font-weight: 500; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">Total Expenses</div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
           <div class="skeleton skeleton-text" style="width: 45%;"></div>
         </template>
         <template v-else>
-          <div style="font-size: 2rem; font-weight: 700; color: var(--danger); margin-bottom: 0.5rem;">RM{{ formatCurrency(expenses) }}</div>
-          <div v-if="forecastExpenses > 0" style="width: 100%; height: 6px; background: var(--bg-background); border-radius: 3px; overflow: hidden; margin-bottom: 0.5rem;">
-            <div :style="{
-              width: Math.min((expenses / forecastExpenses) * 100, 100) + '%',
-              height: '100%',
-              background: expenses > forecastExpenses ? 'var(--danger)' : (expenses > forecastExpenses * 0.8 ? 'var(--warning)' : 'var(--success)')
-            }"></div>
+          <!-- Actual vs Budget scorecard -->
+          <div style="display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0; margin-bottom: 0.75rem;">
+            <div>
+              <div class="text-muted" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Actual</div>
+              <div style="font-size: 1.75rem; font-weight: 700; color: var(--danger);">RM{{ formatCurrency(expenses) }}</div>
+            </div>
+            <div style="background: var(--border-color);"></div>
+            <div style="padding-left: 1rem;">
+              <div class="text-muted" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Budget</div>
+              <div style="font-size: 1.75rem; font-weight: 700;" :class="forecastExpenses > 0 ? '' : 'text-muted'">
+                {{ forecastExpenses > 0 ? 'RM' + formatCurrency(forecastExpenses) : '—' }}
+              </div>
+            </div>
           </div>
-          <div class="text-muted" style="font-size: 0.875rem; display: flex; align-items: center;">
-            <svg style="width: 16px; height: 16px; margin-right: 0.25rem; color: var(--danger);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-            Burn Rate: RM{{ formatCurrency(dailyBurnRate) }} / day
+          <!-- Progress bar + remaining label -->
+          <div v-if="forecastExpenses > 0">
+            <div style="width: 100%; height: 6px; background: var(--bg-background); border-radius: 3px; overflow: hidden; margin-bottom: 0.4rem;">
+              <div :style="{
+                width: Math.min((expenses / forecastExpenses) * 100, 100) + '%',
+                height: '100%',
+                background: expenses > forecastExpenses ? 'var(--danger)' : (expenses > forecastExpenses * 0.8 ? 'var(--warning)' : 'var(--success)'),
+                transition: 'width 0.4s ease'
+              }"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="text-muted" style="font-size: 0.78rem;">{{ ((expenses / forecastExpenses) * 100).toFixed(0) }}% of budget used</span>
+              <span style="font-size: 0.78rem;" :class="expenses > forecastExpenses ? 'text-danger' : 'text-success'">
+                {{ expenses > forecastExpenses ? '⚠️ Over by RM' + formatCurrency(expenses - forecastExpenses) : 'RM' + formatCurrency(forecastExpenses - expenses) + ' remaining' }}
+              </span>
+            </div>
+          </div>
+          <div v-else>
+            <div class="text-muted" style="font-size: 0.78rem; margin-bottom: 0.25rem;">Burn Rate: <strong>RM{{ formatCurrency(dailyBurnRate) }} / day</strong></div>
           </div>
         </template>
       </div>
 
+      <!-- Net Cash Flow Card -->
       <div id="tour-cash-flow" class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500; display: flex; justify-content: space-between;">
-          <span>
-            Net Cash Flow
-            <Tooltip title="Net Cash Flow" description="The difference between your total income and total expenses for the selected month." example="RM5,000 Income - RM3,000 Expenses = RM2,000" />
-          </span>
-          <span v-if="(forecastIncome > 0 || forecastExpenses > 0) && !dataLoading">Target: RM{{ formatCurrency(forecastIncome - forecastExpenses) }}</span>
+        <div class="text-muted" style="margin-bottom: 0.75rem; font-weight: 500; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">
+          Net Cash Flow
+          <Tooltip title="Net Cash Flow" description="Income minus Expenses for the selected month. A positive value means you earned more than you spent." example="RM5,000 Income − RM500 Expenses = RM4,500 Net Cash Flow" />
         </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
           <div class="skeleton skeleton-text" style="width: 40%;"></div>
         </template>
         <template v-else>
-          <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;" :class="netCashFlow >= 0 ? 'text-success' : 'text-danger'">RM{{ formatCurrency(netCashFlow) }}</div>
-          <div class="text-muted" style="font-size: 0.875rem; display: flex; align-items: center;">
-            <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" :class="savingsRate >= 20 ? 'text-success' : (savingsRate >= 10 ? 'text-warning' : 'text-danger')" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-            Savings Rate: <strong :class="savingsRate >= 20 ? 'text-success' : (savingsRate >= 10 ? 'text-warning' : 'text-danger')" style="margin-left: 0.25rem;">{{ savingsRate.toFixed(1) }}%</strong>
+          <div style="display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0; margin-bottom: 0.75rem;">
+            <div>
+              <div class="text-muted" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Actual</div>
+              <div style="font-size: 1.75rem; font-weight: 700;" :class="netCashFlow >= 0 ? 'text-success' : 'text-danger'">RM{{ formatCurrency(netCashFlow) }}</div>
+            </div>
+            <div style="background: var(--border-color);"></div>
+            <div style="padding-left: 1rem;">
+              <!-- Only show Budget Surplus target when forecastIncome > 0 to avoid showing confusing negative numbers -->
+              <div class="text-muted" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Budget Surplus</div>
+              <div style="font-size: 1.75rem; font-weight: 700;" :class="forecastIncome > 0 ? 'text-success' : 'text-muted'">
+                {{ forecastIncome > 0 ? 'RM' + formatCurrency(forecastIncome - forecastExpenses) : '—' }}
+              </div>
+            </div>
+          </div>
+          <!-- Savings Rate badge -->
+          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <svg style="width: 14px; height: 14px;" :class="savingsRate >= 20 ? 'text-success' : (savingsRate >= 10 ? 'text-warning' : 'text-danger')" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+              <span class="text-muted" style="font-size: 0.78rem;">Savings Rate: </span>
+              <strong style="font-size: 0.78rem;" :class="savingsRate >= 20 ? 'text-success' : (savingsRate >= 10 ? 'text-warning' : 'text-danger')">{{ savingsRate.toFixed(1) }}%</strong>
+            </div>
+            <span style="font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 999px; font-weight: 600;"
+              :style="savingsRate >= 20 ? 'background: rgba(16,185,129,0.15); color: var(--success)' : (savingsRate >= 10 ? 'background: rgba(245,158,11,0.15); color: var(--warning)' : 'background: rgba(239,68,68,0.15); color: var(--danger)')">
+              {{ savingsRate >= 20 ? '✅ Healthy' : (savingsRate >= 10 ? '⚡ Moderate' : '⚠️ Low') }}
+            </span>
           </div>
         </template>
       </div>
@@ -93,7 +151,17 @@
 
     <div class="grid-2col" style="margin-bottom: 2rem;">
       <div class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Income vs Expense (6 Months)</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
+            Income vs Expense Trend
+            <Tooltip title="Income vs Expense Trend" description="Tracks your total income and total expenses over the selected date range to visualize your cash flow history." example="Monthly earnings vs total cash outflows" />
+          </h3>
+          <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+            <SearchableSelect v-model="trendStart" :options="trendOptions" @change="fetchData" placeholder="Start Month" />
+            <span style="color: #94A3B8; font-size: 0.8rem; margin: 0 0.1rem;">to</span>
+            <SearchableSelect v-model="trendEnd" :options="trendOptions" @change="fetchData" placeholder="End Month" />
+          </div>
+        </div>
         <div style="height: 300px;">
           <BarChart v-if="trendData.length > 0" :labels="trendLabels" :datasets="trendDatasets" />
         </div>
@@ -101,7 +169,10 @@
 
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="font-weight: 600; margin: 0;">Category Targets</h3>
+          <h3 style="font-weight: 600; margin: 0;">
+            Category Targets
+            <Tooltip title="Category Targets" description="Compares your actual spending in each category against the monthly target limits you set." example="Rent target RM1,000 vs spent RM1,000" />
+          </h3>
           <router-link to="/budgeting/targets" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Manage Targets</router-link>
         </div>
         
@@ -111,12 +182,18 @@
         </div>
 
         <div v-if="activeTab === 'EXPENSE'">
-          <div v-if="expenseBreakdown.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No expenses recorded for this month.</div>
+          <div v-if="enrichedExpenseBreakdown.length === 0" style="text-align: center; padding: 2rem;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">💸</div>
+            <div class="text-muted" style="font-size: 0.875rem;">No expenses logged yet this month. Use the <strong>Log Transaction</strong> button above to record your spending.</div>
+          </div>
           <div v-else style="display: flex; flex-direction: column; gap: 1rem; max-height: 250px; overflow-y: auto; padding-right: 0.5rem;">
-            <div v-for="item in expenseBreakdown" :key="item.category_id || 'uncat'" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div v-for="item in enrichedExpenseBreakdown" :key="item.category_id || 'uncat'" style="display: flex; flex-direction: column; gap: 0.35rem;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-weight: 500;">{{ item.category }} ({{ item.weight_percentage }}%)</span>
-                <span class="text-muted">RM{{ formatCurrency(item.amount) }} <span v-if="item.budget_limit">/ RM{{ formatCurrency(item.budget_limit) }}</span></span>
+                <span class="text-muted" style="font-size: 0.875rem;">
+                  RM{{ formatCurrency(item.amount) }}
+                  <span v-if="item.budget_limit"> / RM{{ formatCurrency(item.budget_limit) }}</span>
+                </span>
               </div>
               <div style="width: 100%; height: 8px; background: var(--bg-background); border-radius: 4px; overflow: hidden;">
                 <div :style="{
@@ -125,12 +202,17 @@
                   background: item.budget_limit ? (item.amount > item.budget_limit ? 'var(--danger)' : (item.amount > item.budget_limit * 0.8 ? 'var(--warning)' : 'var(--success)')) : 'var(--accent-primary)'
                 }"></div>
               </div>
+              <!-- Source badge: Default (from recurring) or no budget -->
+              <div v-if="item.budgetSource === 'default'" style="font-size: 0.7rem; color: var(--text-muted);">🔁 Default limit from Recurring Items</div>
             </div>
           </div>
         </div>
         
         <div v-if="activeTab === 'INCOME'">
-          <div v-if="incomeBreakdown.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No income recorded for this month.</div>
+          <div v-if="incomeBreakdown.length === 0" style="text-align: center; padding: 2rem;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">💰</div>
+            <div class="text-muted" style="font-size: 0.875rem;">No income logged yet this month. Use the <strong>Log Transaction</strong> button above to record your income.</div>
+          </div>
           <div v-else style="display: flex; flex-direction: column; gap: 1rem; max-height: 250px; overflow-y: auto; padding-right: 0.5rem;">
             <div v-for="item in incomeBreakdown" :key="item.category_id || 'uncat'" style="display: flex; flex-direction: column; gap: 0.5rem;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -153,7 +235,10 @@
     <div class="grid-2col" style="margin-bottom: 2rem;">
       <div id="tour-categories" class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-          <h3 style="font-weight: 600; margin: 0;">Recent Transactions</h3>
+          <h3 style="font-weight: 600; margin: 0;">
+            Recent Transactions
+            <Tooltip title="Recent Transactions" description="List of your most recent transactions. Click on a transaction to edit or delete it." example="Starbucks coffee purchase, monthly salary deposit" />
+          </h3>
           <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
             <button class="btn btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;" @click="quickAdd('EXPENSE', 'Food')">🍕 Food</button>
             <button class="btn btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;" @click="quickAdd('EXPENSE', 'Transport')">🚗 Transport</button>
@@ -196,22 +281,32 @@
           <router-link to="/budgeting/recurring" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Manage Items</router-link>
         </div>
         <div v-if="activeUnloggedSubscriptions.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No pending recurring items this month.</div>
-        <div v-else style="max-height: 300px; overflow-y: auto;">
-        <div class="table-container">
-          <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
-            <tbody>
-              <tr v-for="sub in activeUnloggedSubscriptions" :key="sub.id" style="border-bottom: 1px solid var(--border-color);">
-                <td style="padding: 0.75rem 0; font-weight: 500;">
-                  <span :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'" style="margin-right: 0.5rem;">{{ sub.type === 'INCOME' ? '↑' : '↓' }}</span>
-                  {{ sub.name }}
-                </td>
-                <td style="padding: 0.75rem 0; color: var(--text-muted); text-align: right;" :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'">
-                  {{ sub.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(sub.amount) }} / {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <div v-else>
+          <div class="table-container">
+            <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+              <tbody>
+                <tr v-for="sub in activeUnloggedSubscriptions" :key="sub.id" style="border-bottom: 1px solid var(--border-color);" :style="sub.isInactive ? 'opacity: 0.65;' : ''">
+                  <td style="padding: 0.75rem 0; font-weight: 500;">
+                    <span :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'" style="margin-right: 0.5rem;">{{ sub.type === 'INCOME' ? '↑' : '↓' }}</span>
+                    {{ sub.name }}
+                    <span v-if="sub.isLogged" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; background: rgba(16,185,129,0.15); color: var(--success); border-radius: 4px; margin-left: 0.5rem; font-weight: 600;">
+                      ✓ {{ sub.type === 'INCOME' ? 'Received' : 'Paid' }}
+                    </span>
+                    <span v-else-if="sub.isInactive" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; background: var(--bg-background); color: var(--text-muted); border-radius: 4px; margin-left: 0.5rem; font-weight: 500;">
+                      Passed
+                    </span>
+                    <div v-if="sub.auto_log_day" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem;">
+                      {{ sub.type === 'INCOME' ? 'Auto credit' : 'Auto debit' }} on {{ getOrdinalSuffix(sub.auto_log_day) }}
+                    </div>
+                  </td>
+                  <td style="padding: 0.75rem 0; color: var(--text-muted); text-align: right;" :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'">
+                    {{ sub.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(sub.amount) }} / {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
           <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; font-weight: 600;">
             <span>Monthly Equivalent:</span>
             <span>
@@ -226,41 +321,46 @@
 
     <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Debit Account Breakdown (Recurring Expenses)</h3>
+        <h3 style="margin-bottom: 1rem; font-weight: 600;">
+          Debit Account Breakdown (Recurring Expenses)
+          <Tooltip title="Debit Account Breakdown" description="Visualizes which bank accounts are used to pay for your active recurring items." example="Shows auto-debits linked to your savings account vs credit cards" />
+        </h3>
         <div v-if="debitAccountBreakdown.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">
           No recurring expenses configured with debit accounts.
         </div>
-        <div v-else class="table-container">
-          <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-color);">
-                <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Debit Account</th>
-                <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500; text-align: right;">Monthly Value</th>
-                <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500; text-align: right; width: 120px;">Percentage</th>
-                <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500; width: 200px;">Share</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in debitAccountBreakdown" :key="item.name" style="border-bottom: 1px solid var(--border-color);">
-                <td style="padding: 0.75rem 0; font-weight: 600;">{{ item.name }}</td>
-                <td style="padding: 0.75rem 0; text-align: right; font-weight: 500; color: var(--danger);">
-                  -RM{{ formatCurrency(item.amount) }}
-                </td>
-                <td style="padding: 0.75rem 0; text-align: right; font-weight: 600; color: var(--accent-primary);">
-                  {{ item.percentage.toFixed(1) }}%
-                </td>
-                <td style="padding: 0.75rem 0; vertical-align: middle;">
-                  <div style="width: 100%; height: 8px; background: var(--bg-background); border-radius: 4px; overflow: hidden;">
-                    <div :style="{
-                      width: item.percentage + '%',
-                      height: '100%',
-                      background: 'var(--accent-primary)'
-                    }"></div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div v-else>
+          <div class="table-container">
+            <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                  <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Debit Account</th>
+                  <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500; text-align: right;">Monthly Value</th>
+                  <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500; text-align: right; width: 120px;">Percentage</th>
+                  <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500; width: 200px;">Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in debitAccountBreakdown" :key="item.name" style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: 0.75rem 0; font-weight: 600;">{{ item.name }}</td>
+                  <td style="padding: 0.75rem 0; text-align: right; font-weight: 500; color: var(--danger);">
+                    -RM{{ formatCurrency(item.amount) }}
+                  </td>
+                  <td style="padding: 0.75rem 0; text-align: right; font-weight: 600; color: var(--accent-primary);">
+                    {{ item.percentage.toFixed(1) }}%
+                  </td>
+                  <td style="padding: 0.75rem 0; vertical-align: middle;">
+                    <div style="width: 100%; height: 8px; background: var(--bg-background); border-radius: 4px; overflow: hidden;">
+                      <div :style="{
+                        width: item.percentage + '%',
+                        height: '100%',
+                        background: 'var(--accent-primary)'
+                      }"></div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -340,7 +440,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import BarChart from '@/components/BarChart.vue'
@@ -375,8 +475,22 @@ const recentTransactions = ref([])
 const trendData = ref([])
 const activeTab = ref('EXPENSE')
 
-const monthlyFixedCosts = ref(0)
-const monthlyFixedIncome = ref(0)
+const monthlyFixedCosts = computed(() => {
+  return activeUnloggedSubscriptions.value
+    .filter(s => s.type === 'EXPENSE')
+    .reduce((sum, s) => {
+      const amt = parseFloat(s.amount)
+      return sum + (s.billing_cycle === 'MONTHLY' ? amt : amt / 12)
+    }, 0)
+})
+const monthlyFixedIncome = computed(() => {
+  return activeUnloggedSubscriptions.value
+    .filter(s => s.type === 'INCOME')
+    .reduce((sum, s) => {
+      const amt = parseFloat(s.amount)
+      return sum + (s.billing_cycle === 'MONTHLY' ? amt : amt / 12)
+    }, 0)
+})
 const loggedSubscriptionIds = ref([])
 const subscriptions = ref([])
 const targets = ref([])
@@ -387,6 +501,66 @@ const isNewCategory = ref(false)
 const d = new Date()
 const selectedMonth = ref(d.getMonth() + 1)
 const selectedYear = ref(d.getFullYear())
+const currentYear = d.getFullYear()
+
+const trendStart = ref(`${currentYear}-01`)
+const trendEnd = ref(`${currentYear}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+const trendOptions = ref([])
+
+const generateTrendOptions = (oldestYear, oldestMonth) => {
+  const options = []
+  const currentY = d.getFullYear()
+  const currentM = d.getMonth() + 1
+  
+  let startYear = oldestYear || (currentY - 2)
+  let startMonth = oldestMonth || 1
+  
+  const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  
+  let y = startYear
+  let m = startMonth
+  
+  while (y < currentY || (y === currentY && m <= currentM)) {
+    const val = `${y}-${String(m).padStart(2, '0')}`
+    const lbl = `${shortMonths[m - 1]} ${y}`
+    options.push({ value: val, label: lbl })
+    m++
+    if (m > 12) {
+      m = 1
+      y++
+    }
+  }
+  
+  trendOptions.value = options
+}
+
+const fetchOldestDataDate = async () => {
+  try {
+    const res = await api.get('/budgeting/transactions/')
+    let oldestY = null
+    let oldestM = null
+    
+    if (res.data && res.data.length > 0) {
+      res.data.forEach(item => {
+        if (item.date) {
+          const parts = item.date.split('-')
+          const itemY = Number(parts[0])
+          const itemM = Number(parts[1])
+          if (!oldestY || itemY < oldestY || (itemY === oldestY && itemM < oldestM)) {
+            oldestY = itemY
+            oldestM = itemM
+          }
+        }
+      })
+    }
+    
+    generateTrendOptions(oldestY, oldestM)
+  } catch(e) {
+    console.error(e)
+    generateTrendOptions()
+  }
+}
+
 const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 const yearsList = computed(() => {
@@ -430,19 +604,94 @@ const paymentAccountOptions = computed(() => {
 
 const formatCurrency = (val) => Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+const getOrdinalSuffix = (day) => {
+  if (day >= 11 && day <= 13) {
+    return `${day}th`;
+  }
+  switch (day % 10) {
+    case 1: return `${day}st`;
+    case 2: return `${day}nd`;
+    case 3: return `${day}rd`;
+    default: return `${day}th`;
+  }
+}
+
 const activeUnloggedSubscriptions = computed(() => {
   const currentMonthKey = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`
-  return subscriptions.value.filter(s => {
+  
+  // Filter active (non-archived, non-paused) subscriptions
+  const list = subscriptions.value.filter(s => {
     const isArchived = s.status === 'ARCHIVED'
-    const isLogged = loggedSubscriptionIds.value.includes(s.id)
     const isPaused = s.paused_months && s.paused_months.includes(currentMonthKey)
-    return !isArchived && !isLogged && !isPaused
+    return !isArchived && !isPaused
   })
+  
+  // Map with inactive / logged status
+  const mapped = list.map(s => {
+    const isLogged = loggedSubscriptionIds.value.includes(s.id)
+    let isPassed = false
+    
+    if (s.auto_log_day) {
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth() + 1;
+      const currentDay = today.getDate();
+      
+      if (selectedYear.value < currentYear) {
+        isPassed = true;
+      } else if (selectedYear.value === currentYear) {
+        if (selectedMonth.value < currentMonth) {
+          isPassed = true;
+        } else if (selectedMonth.value === currentMonth) {
+          isPassed = s.auto_log_day < currentDay;
+        }
+      }
+    }
+    
+    return {
+      ...s,
+      isInactive: isLogged || isPassed,
+      isLogged
+    }
+  })
+  
+  // Sort: active (upcoming) first, then inactive (passed). Within each group, sort by auto_log_day ascending (nulls at the end)
+  mapped.sort((a, b) => {
+    if (a.isInactive !== b.isInactive) {
+      return a.isInactive ? 1 : -1;
+    }
+    const dayA = a.auto_log_day === null || a.auto_log_day === undefined ? 999 : a.auto_log_day;
+    const dayB = b.auto_log_day === null || b.auto_log_day === undefined ? 999 : b.auto_log_day;
+    return dayA - dayB;
+  })
+  
+  return mapped
 })
 
 const savingsRate = computed(() => {
   if (income.value <= 0) return 0;
   return (netCashFlow.value / income.value) * 100;
+})
+
+// Per-category monthly recurring total (for Default budget fallback)
+const recurringByCategoryId = computed(() => {
+  const map = {}
+  subscriptions.value
+    .filter(s => s.status === 'ACTIVE' && s.type === 'EXPENSE')
+    .forEach(s => {
+      if (!s.category) return
+      const monthly = s.billing_cycle === 'MONTHLY' ? parseFloat(s.amount) : parseFloat(s.amount) / 12
+      map[s.category] = (map[s.category] || 0) + monthly
+    })
+  return map
+})
+
+// Expense breakdown enriched with Default budget_limit from recurring when no explicit target
+const enrichedExpenseBreakdown = computed(() => {
+  return expenseBreakdown.value.map(item => ({
+    ...item,
+    budgetSource: item.budget_source || (item.budget_limit ? 'custom' : null)
+  }))
 })
 
 const debitAccountBreakdown = computed(() => {
@@ -514,8 +763,6 @@ const fetchData = async () => {
     expenseBreakdown.value = res.data.expense_breakdown
     incomeBreakdown.value = res.data.income_breakdown || []
     recentTransactions.value = res.data.recent_transactions || []
-    monthlyFixedCosts.value = res.data.monthly_fixed_costs || 0
-    monthlyFixedIncome.value = res.data.monthly_fixed_income || 0
     loggedSubscriptionIds.value = res.data.logged_subscription_ids || []
     targets.value = res.data.targets || []
   } catch (e) {
@@ -523,7 +770,7 @@ const fetchData = async () => {
   }
   
   try {
-    const trendRes = await api.get('/budgeting/transactions/trend/')
+    const trendRes = await api.get(`/budgeting/transactions/trend/?start_date=${trendStart.value}&end_date=${trendEnd.value}`)
     trendData.value = trendRes.data
   } catch(e) {
     console.error(e)
@@ -631,6 +878,8 @@ const submitTransaction = async () => {
   }
 }
 
+// No pagination required for Overview Dashboard
+
 onMounted(async () => {
   try {
     const res = await api.get('/budgeting/transactions/')
@@ -648,9 +897,33 @@ onMounted(async () => {
     console.error(e)
   }
 
+  await fetchOldestDataDate()
   await fetchData()
   await fetchCategories()
   await fetchSubscriptions()
   await fetchCreditCards()
 })
 </script>
+
+<style scoped>
+:deep(.trend-select-wrapper .searchable-select) {
+  width: 95px !important;
+}
+:deep(.trend-select-wrapper .select-trigger) {
+  height: 28px !important;
+  padding: 0.2rem 0.4rem !important;
+  background: transparent !important;
+  border: none !important;
+  font-size: 0.8rem !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+:deep(.trend-select-wrapper .chevron-arrow) {
+  font-size: 0.6rem !important;
+  margin-left: 0.15rem !important;
+}
+:deep(.trend-select-wrapper .dropdown-menu) {
+  width: 140px !important;
+  font-size: 0.8rem !important;
+}
+</style>

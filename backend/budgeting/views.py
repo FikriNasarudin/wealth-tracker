@@ -285,7 +285,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
                     continue
                     
                 active_subs.append(s)
+            all_subs = list(subs)  # keep full list for budget limit computation
             subs = active_subs
+        else:
+            all_subs = list(subs)
 
         for s in subs:
             monthly_amt = s.amount if s.billing_cycle == 'MONTHLY' else s.amount / Decimal('12.0')
@@ -333,11 +336,63 @@ class TransactionViewSet(viewsets.ModelViewSet):
             else:
                 expense_breakdown.append(entry)
 
+        # --- Default entries: recurring subs with no explicit target ---
+        # Collect category_ids already covered by explicit targets
+        covered_expense_cats = set(t.category_id for t in active_targets if t.type == 'EXPENSE' and t.category_id)
+        covered_expense_names = set(t.name.lower() for t in active_targets if t.type == 'EXPENSE' and t.name)
+        covered_income_cats  = set(t.category_id for t in active_targets if t.type == 'INCOME' and t.category_id)
+        covered_income_names = set(t.name.lower() for t in active_targets if t.type == 'INCOME' and t.name)
+
+        # Aggregate uncovered subs by category
+        default_expense_cats = {}  # category_id -> {name, total}
+        default_income_cats  = {}
+
+        for s in all_subs:
+            monthly_amt = s.amount if s.billing_cycle == 'MONTHLY' else s.amount / Decimal('12.0')
+            if s.type == 'EXPENSE':
+                if s.category_id and s.category_id not in covered_expense_cats:
+                    if s.category_id not in default_expense_cats:
+                        default_expense_cats[s.category_id] = {'name': s.category.name if s.category else 'Uncategorized', 'total': Decimal('0.00')}
+                    default_expense_cats[s.category_id]['total'] += monthly_amt
+            else:
+                if s.category_id and s.category_id not in covered_income_cats:
+                    if s.category_id not in default_income_cats:
+                        default_income_cats[s.category_id] = {'name': s.category.name if s.category else 'Uncategorized', 'total': Decimal('0.00')}
+                    default_income_cats[s.category_id]['total'] += monthly_amt
+
+        for cat_id, info in default_expense_cats.items():
+            txn_sum = qs.filter(type='EXPENSE', category_id=cat_id).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            total_amt = txn_sum + info['total']
+            expense_breakdown.append({
+                'category_id': cat_id,
+                'category': info['name'],
+                'amount': total_amt,
+                'weight_percentage': 0,
+                'budget_limit': info['total'],
+                'budget_source': 'default',
+            })
+
+        for cat_id, info in default_income_cats.items():
+            txn_sum = qs.filter(type='INCOME', category_id=cat_id).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            total_amt = txn_sum + info['total']
+            income_breakdown.append({
+                'category_id': cat_id,
+                'category': info['name'],
+                'amount': total_amt,
+                'weight_percentage': 0,
+                'budget_limit': info['total'],
+                'budget_source': 'default',
+            })
+
         # Re-calculate weights
         for b in income_breakdown:
             b['weight_percentage'] = round((b['amount'] / income * 100) if income > 0 else 0, 2)
         for b in expense_breakdown:
             b['weight_percentage'] = round((b['amount'] / expenses * 100) if expenses > 0 else 0, 2)
+
+        # Include default targets in forecasts
+        forecast_expenses += sum(info['total'] for info in default_expense_cats.values())
+        forecast_income += sum(info['total'] for info in default_income_cats.values())
 
         return Response({
             'total_income': income,
@@ -359,17 +414,47 @@ class TransactionViewSet(viewsets.ModelViewSet):
         import datetime
         import calendar
         
-        end_date = datetime.date.today()
-        start_date = end_date.replace(day=1)
-        for _ in range(5):
-            start_date = (start_date - datetime.timedelta(days=1)).replace(day=1)
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
+        year_str = request.query_params.get('year')
+        
+        today = datetime.date.today()
+        
+        if start_date_str and end_date_str:
+            try:
+                start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                try:
+                    start_date = datetime.datetime.strptime(start_date_str, '%Y-%m').date().replace(day=1)
+                    temp_end = datetime.datetime.strptime(end_date_str, '%Y-%m').date()
+                    days_in_month = calendar.monthrange(temp_end.year, temp_end.month)[1]
+                    end_date = temp_end.replace(day=days_in_month)
+                except ValueError:
+                    start_date = None
+                    end_date = None
+        elif year_str:
+            try:
+                yr = int(year_str)
+                start_date = datetime.date(yr, 1, 1)
+                end_date = datetime.date(yr, 12, 31)
+            except ValueError:
+                start_date = None
+                end_date = None
+        else:
+            start_date = datetime.date(today.year, 1, 1)
+            end_date = datetime.date(today.year, 12, 31)
+            
+        if not start_date or not end_date:
+            start_date = datetime.date(today.year, 1, 1)
+            end_date = datetime.date(today.year, 12, 31)
 
-        qs = self.get_queryset().filter(date__gte=start_date)
+        qs = self.get_queryset().filter(date__gte=start_date, date__lte=end_date)
         
         trend_data = {}
-        curr = start_date
+        curr = start_date.replace(day=1)
         months_list = []
-        for _ in range(6):
+        while curr <= end_date:
             key = curr.strftime('%b %Y')
             month_key = curr.strftime('%Y-%m')
             
@@ -383,7 +468,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 '_start': period_start, '_end': period_end, '_month_key': month_key
             }
             months_list.append(key)
-            curr += datetime.timedelta(days=days_in_month)
+            # increment to next month safely
+            if curr.month == 12:
+                curr = curr.replace(year=curr.year + 1, month=1)
+            else:
+                curr = curr.replace(month=curr.month + 1)
 
         for txn in qs:
             key = txn.date.strftime('%b %Y')

@@ -31,15 +31,28 @@
         </h3>
         <button id="tour-add-account" class="btn btn-primary" @click="showAddAccountModal = true" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;">+ Add Account</button>
       </div>
-      <div v-if="accounts.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No bank accounts added yet.</div>
+      <div v-if="activeAccounts.length === 0" style="text-align: center; padding: 3rem 2rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>
+        <h4 style="font-weight: 600; margin-bottom: 0.5rem;">No bank accounts yet</h4>
+        <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1.25rem; max-width: 380px; margin-left: auto; margin-right: auto;">Add your cash, savings, or checking accounts to track your total liquid assets and emergency fund runway.</p>
+        <button class="btn btn-primary" @click="showAddAccountModal = true" style="padding: 0.6rem 1.5rem;">+ Add Your First Account</button>
+      </div>
       <div v-else style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
-        <div v-for="acc in accounts" :key="acc.id" style="border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.5rem; position: relative;">
+        <div v-for="acc in activeAccounts" :key="acc.id" style="border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.5rem; position: relative;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
             <div>
               <div style="font-weight: 600; font-size: 1.125rem;">{{ acc.name }}</div>
               <div class="text-muted" style="font-size: 0.875rem;">{{ acc.institution || 'Cash' }} &bull; {{ acc.type }}</div>
             </div>
-            <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="openUpdateModal(acc)">Update Balance</button>
+            <div style="display: flex; gap: 0.25rem; align-items: center;">
+              <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @click="openUpdateModal(acc)" title="Update Balance">Update Balance</button>
+              <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: var(--text-secondary); display: inline-flex;" @click="archiveAccount(acc)" title="Archive Account">
+                <svg style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+              </button>
+              <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; display: inline-flex;" @click="deleteAccount(acc)" title="Delete Account">
+                <svg style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              </button>
+            </div>
           </div>
           
           <div style="font-size: 1.5rem; font-weight: 700;" :class="getLatestBalance(acc.id) >= 0 ? 'text-success' : 'text-danger'">
@@ -47,6 +60,41 @@
           </div>
           <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">
             Last updated: {{ getLastUpdatedText(acc.id) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Archived Accounts Section -->
+    <div v-if="archivedAccounts.length > 0" class="card" style="margin-top: 2rem; border-color: rgba(255, 255, 255, 0.03); background: rgba(18, 24, 40, 0.4);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h4 style="font-weight: 600; margin: 0; color: var(--text-secondary); display: flex; align-items: center; gap: 0.5rem;">
+          <svg style="width: 18px; height: 18px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+          Archived Accounts ({{ archivedAccounts.length }})
+        </h4>
+        <button class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="showArchived = !showArchived">
+          {{ showArchived ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      
+      <div v-if="showArchived" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+        <div v-for="acc in archivedAccounts" :key="acc.id" style="border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.25rem; opacity: 0.6; background: rgba(0, 0, 0, 0.2);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div>
+              <div style="font-weight: 600; font-size: 1rem; text-decoration: line-through;">{{ acc.name }}</div>
+              <div class="text-muted" style="font-size: 0.8rem;">{{ acc.institution || 'Cash' }} &bull; {{ acc.type }}</div>
+            </div>
+            <div style="display: flex; gap: 0.25rem; align-items: center;">
+              <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @click="restoreAccount(acc)" title="Restore Account">
+                Restore
+              </button>
+              <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; display: inline-flex;" @click="deleteAccount(acc)" title="Delete Account">
+                <svg style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              </button>
+            </div>
+          </div>
+          <div style="font-size: 1.25rem; font-weight: 700;" class="text-muted">
+            RM{{ formatCurrency(getLatestBalance(acc.id)) }}
           </div>
         </div>
       </div>
@@ -158,9 +206,46 @@ const getLastUpdatedText = (accountId) => {
   return `${months[snap.month - 1]} ${snap.year}`
 }
 
+const showArchived = ref(false)
+
+const activeAccounts = computed(() => accounts.value.filter(a => a.is_active))
+const archivedAccounts = computed(() => accounts.value.filter(a => !a.is_active))
+
 const totalLiquidity = computed(() => {
-  return accounts.value.reduce((total, acc) => total + getLatestBalance(acc.id), 0)
+  return activeAccounts.value.reduce((total, acc) => total + getLatestBalance(acc.id), 0)
 })
+
+const archiveAccount = async (acc) => {
+  if (!confirm(`Are you sure you want to archive "${acc.name}"? It will be hidden from the active list and excluded from total assets.`)) return
+  try {
+    await api.patch(`/banking/accounts/${acc.id}/`, { is_active: false })
+    await fetchData()
+  } catch (e) {
+    console.error(e)
+    alert('Failed to archive account')
+  }
+}
+
+const restoreAccount = async (acc) => {
+  try {
+    await api.patch(`/banking/accounts/${acc.id}/`, { is_active: true })
+    await fetchData()
+  } catch (e) {
+    console.error(e)
+    alert('Failed to restore account')
+  }
+}
+
+const deleteAccount = async (acc) => {
+  if (!confirm(`Are you sure you want to permanently delete "${acc.name}"? This will delete all balance history and cannot be undone.`)) return
+  try {
+    await api.delete(`/banking/accounts/${acc.id}/`)
+    await fetchData()
+  } catch (e) {
+    console.error(e)
+    alert('Failed to delete account')
+  }
+}
 
 const fetchData = async () => {
   try {

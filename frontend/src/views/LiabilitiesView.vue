@@ -131,21 +131,44 @@
 
     <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Debt Reduction Progress</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
+            Debt Reduction Progress
+            <Tooltip title="Debt Reduction Progress" description="Shows the decrease in your total liabilities month-over-month." example="Visualization of paying down your loan balances" />
+          </h3>
+          <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+            <SearchableSelect v-model="debtProgressStart" :options="trendOptions" placeholder="Start Month" />
+            <span style="color: #94A3B8; font-size: 0.8rem; margin: 0 0.1rem;">to</span>
+            <SearchableSelect v-model="debtProgressEnd" :options="trendOptions" placeholder="End Month" />
+          </div>
+        </div>
         <div style="height: 300px;">
-          <GraphLine v-if="yearlyData.length > 0" :labels="monthlyLabels" :datasets="progressDatasets" />
+          <GraphLine v-if="debtProgressData.length > 0" :labels="debtProgressLabels" :datasets="progressDatasets" />
         </div>
       </div>
 
       <div class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Original vs Remaining</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
+            Original vs Remaining
+            <Tooltip title="Original vs Remaining" description="Compares the initial loan amounts against what you currently owe to show payoff progress." example="Original RM10,000 borrowed vs RM8,000 remaining" />
+          </h3>
+          <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+            <SearchableSelect v-model="origVsRemStart" :options="trendOptions" placeholder="Start Month" />
+            <span style="color: #94A3B8; font-size: 0.8rem; margin: 0 0.1rem;">to</span>
+            <SearchableSelect v-model="origVsRemEnd" :options="trendOptions" placeholder="End Month" />
+          </div>
+        </div>
         <div style="height: 300px;">
-          <BarChart v-if="yearlyData.length > 0" :labels="monthlyLabels" :datasets="comparisonDatasets" />
+          <BarChart v-if="origVsRemData.length > 0" :labels="origVsRemLabels" :datasets="comparisonDatasets" />
         </div>
       </div>
       
       <div class="card">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">Liability Distribution (Current Month)</h3>
+        <h3 style="margin-bottom: 1rem; font-weight: 600;">
+          Liability Distribution (Current Month)
+          <Tooltip title="Liability Distribution" description="Visual breakdown of your current debts by category/lender to identify where your biggest liabilities lie." example="Credit cards vs mortgage vs student loans" />
+        </h3>
         <div v-if="distribution.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No liabilities recorded for this period.</div>
         <div v-else style="display: flex; justify-content: center; align-items: center; min-height: 250px;">
           <PieChart :labels="distribution.map(i => i.category)" :data="distribution.map(i => i.balance)" />
@@ -274,12 +297,148 @@ const originalChange = computed(() => calculateChange(totalOriginal.value, prevT
 const remainingChange = computed(() => calculateChange(totalRemaining.value, prevTotalRemaining.value))
 const reducedChange = computed(() => calculateChange(totalReduced.value, prevTotalReduced.value))
 
-const monthlyLabels = computed(() => yearlyData.value.map(d => d.month))
+import SearchableSelect from '@/components/SearchableSelect.vue'
 
+const d = new Date()
+const selectedMonth = ref(d.getMonth() + 1)
+const selectedYear = ref(d.getFullYear())
+const currentYear = d.getFullYear()
+
+const debtProgressStart = ref(`${currentYear}-01`)
+const debtProgressEnd = ref(`${currentYear}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+const origVsRemStart = ref(`${currentYear}-01`)
+const origVsRemEnd = ref(`${currentYear}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+
+const trendOptions = ref([])
+
+const generateTrendOptions = (oldestYear, oldestMonth) => {
+  const options = []
+  const currentY = d.getFullYear()
+  const currentM = d.getMonth() + 1
+  
+  let startYear = oldestYear || (currentY - 2)
+  let startMonth = oldestMonth || 1
+  
+  const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  
+  let y = startYear
+  let m = startMonth
+  
+  while (y < currentY || (y === currentY && m <= currentM)) {
+    const val = `${y}-${String(m).padStart(2, '0')}`
+    const lbl = `${shortMonths[m - 1]} ${y}`
+    options.push({ value: val, label: lbl })
+    m++
+    if (m > 12) {
+      m = 1
+      y++
+    }
+  }
+  
+  trendOptions.value = options
+}
+
+const fetchOldestDataDate = async () => {
+  try {
+    const res = await api.get('/liabilities/snapshots/')
+    let oldestY = null
+    let oldestM = null
+    
+    if (res.data && res.data.length > 0) {
+      res.data.forEach(item => {
+        const itemY = Number(item.year)
+        const itemM = Number(item.month)
+        if (!oldestY || itemY < oldestY || (itemY === oldestY && itemM < oldestM)) {
+          oldestY = itemY
+          oldestM = itemM
+        }
+      })
+    }
+    
+    generateTrendOptions(oldestY, oldestM)
+  } catch(e) {
+    console.error(e)
+    generateTrendOptions()
+  }
+}
+
+const filterLender = ref('')
+const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+const rawSnapshots = ref([])
+
+const processLiabilitiesData = (allSnaps, startDateStr, endDateStr) => {
+  if (!startDateStr || !endDateStr || !allSnaps) return []
+  const [startYear, startMonth] = startDateStr.split('-').map(Number)
+  const [endYear, endMonth] = endDateStr.split('-').map(Number)
+  
+  const list = []
+  let currYear = startYear
+  let currMonth = startMonth
+  const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  
+  while (currYear < endYear || (currYear === endYear && currMonth <= endMonth)) {
+    list.push({
+      year: currYear,
+      month: currMonth,
+      monthLabel: `${shortMonths[currMonth - 1]} ${currYear}`,
+      remainingPrincipal: 0,
+      originalAmount: 0
+    })
+    currMonth++
+    if (currMonth > 12) {
+      currMonth = 1
+      currYear++
+    }
+  }
+  
+  list.forEach(item => {
+    const priorSnaps = allSnaps.filter(s => {
+      const snapY = Number(s.year)
+      const snapM = Number(s.month)
+      if (snapY < item.year) return true;
+      if (snapY === item.year && snapM <= item.month) return true;
+      return false;
+    })
+    
+    const latestPerLiability = {}
+    priorSnaps.forEach(s => {
+      const key = `${s.category}_${s.lender}`
+      if (!latestPerLiability[key]) {
+        latestPerLiability[key] = s
+      } else {
+        const existing = latestPerLiability[key]
+        if (s.year > existing.year || (s.year === existing.year && s.month > existing.month)) {
+          latestPerLiability[key] = s
+        }
+      }
+    })
+    
+    let tRemaining = 0
+    let tOriginal = 0
+    Object.values(latestPerLiability).forEach(s => {
+      tRemaining += parseFloat(s.remaining_principal || 0)
+      tOriginal += parseFloat(s.original_loan_amount || 0)
+    })
+    
+    item.remainingPrincipal = tRemaining
+    item.originalAmount = tOriginal
+  })
+  
+  return list.map(item => ({
+    month: item.monthLabel,
+    remainingPrincipal: item.remainingPrincipal,
+    originalAmount: item.originalAmount
+  }))
+}
+
+// 1. Debt Reduction Progress computed properties
+const debtProgressData = computed(() => processLiabilitiesData(rawSnapshots.value, debtProgressStart.value, debtProgressEnd.value))
+const debtProgressLabels = computed(() => debtProgressData.value.map(d => d.month))
 const progressDatasets = computed(() => [
   { 
     label: 'Total Remaining Principal', 
-    data: yearlyData.value.map(d => d.remainingPrincipal), 
+    data: debtProgressData.value.map(d => d.remainingPrincipal), 
     fill: true, 
     backgroundColor: 'rgba(239, 68, 68, 0.2)', 
     borderColor: '#EF4444', 
@@ -287,26 +446,23 @@ const progressDatasets = computed(() => [
   }
 ])
 
+// 2. Original vs Remaining computed properties
+const origVsRemData = computed(() => processLiabilitiesData(rawSnapshots.value, origVsRemStart.value, origVsRemEnd.value))
+const origVsRemLabels = computed(() => origVsRemData.value.map(d => d.month))
 const comparisonDatasets = computed(() => [
   { 
     label: 'Original Loan Amount', 
-    data: yearlyData.value.map(d => d.originalAmount), 
+    data: origVsRemData.value.map(d => d.originalAmount), 
     backgroundColor: '#3B82F6',
     borderRadius: 4
   },
   { 
     label: 'Remaining Principal', 
-    data: yearlyData.value.map(d => d.remainingPrincipal), 
+    data: origVsRemData.value.map(d => d.remainingPrincipal), 
     backgroundColor: '#EF4444',
     borderRadius: 4
   }
 ])
-
-const d = new Date()
-const selectedMonth = ref(d.getMonth() + 1)
-const selectedYear = ref(d.getFullYear())
-const filterLender = ref('')
-const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 const dataLoading = ref(true)
 
@@ -358,58 +514,7 @@ const fetchData = async () => {
     try {
       const allRes = await api.get(`/liabilities/snapshots/${filterLender.value ? '?lender_id=' + filterLender.value : ''}`)
       const allSnaps = allRes.data
-      
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-      const aggregated = Array(12).fill(null).map((_, i) => ({
-        month: months[i],
-        remainingPrincipal: 0,
-        originalAmount: 0
-      }))
-      
-      for (let m = 1; m <= 12; m++) {
-        const priorSnaps = allSnaps.filter(s => {
-           const snapY = Number(s.year)
-           const snapM = Number(s.month)
-           if (snapY < selectedYear.value) return true;
-           if (snapY === selectedYear.value && snapM <= m) return true;
-           return false;
-        })
-        
-        const latestPerLiability = {}
-        priorSnaps.forEach(s => {
-          const key = `${s.category}_${s.lender}`
-          if (!latestPerLiability[key]) {
-            latestPerLiability[key] = s
-          } else {
-            const existing = latestPerLiability[key]
-            if (s.year > existing.year || (s.year === existing.year && s.month > existing.month)) {
-              latestPerLiability[key] = s
-            }
-          }
-        })
-        
-        let tRemaining = 0
-        let tOriginal = 0
-        Object.values(latestPerLiability).forEach(s => {
-          tRemaining += parseFloat(s.remaining_principal || 0)
-          tOriginal += parseFloat(s.original_loan_amount || 0)
-        })
-        
-        // Set values for all 12 months, we will truncate the array later
-        aggregated[m-1].remainingPrincipal = tRemaining
-        aggregated[m-1].originalAmount = tOriginal
-      }
-      
-      const currentRealMonth = (new Date()).getMonth() + 1
-      const currentRealYear = (new Date()).getFullYear()
-      
-      if (selectedYear.value === currentRealYear) {
-        yearlyData.value = aggregated.slice(0, currentRealMonth)
-      } else if (selectedYear.value > currentRealYear) {
-        yearlyData.value = []
-      } else {
-        yearlyData.value = aggregated
-      }
+      rawSnapshots.value = allSnaps
 
       // Calculate Payoff Plans for selected month
       const currentPriorSnaps = allSnaps.filter(s => {
@@ -565,6 +670,7 @@ onMounted(async () => {
       console.error(e)
     }
 
+    await fetchOldestDataDate()
     await fetchOptions()
     await fetchData()
   } finally {
@@ -572,3 +678,26 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+:deep(.trend-select-wrapper .searchable-select) {
+  width: 95px !important;
+}
+:deep(.trend-select-wrapper .select-trigger) {
+  height: 28px !important;
+  padding: 0.2rem 0.4rem !important;
+  background: transparent !important;
+  border: none !important;
+  font-size: 0.8rem !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+:deep(.trend-select-wrapper .chevron-arrow) {
+  font-size: 0.6rem !important;
+  margin-left: 0.15rem !important;
+}
+:deep(.trend-select-wrapper .dropdown-menu) {
+  width: 140px !important;
+  font-size: 0.8rem !important;
+}
+</style>

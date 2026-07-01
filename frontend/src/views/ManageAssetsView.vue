@@ -18,6 +18,19 @@
       </form>
     </Modal>
 
+    <!-- Edit Category Modal -->
+    <Modal :show="showEditCategoryModal" title="Edit Category" @close="cancelEditCategory">
+      <form @submit.prevent="saveCategory" v-if="editingCategory">
+        <div class="form-group">
+          <label class="form-label">Category Name</label>
+          <input v-model="editingCategory.editName" type="text" class="form-input" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading.cat">
+          {{ loading.cat ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </form>
+    </Modal>
+
     <!-- Add Platform Modal -->
     <Modal :show="showAddPlatformModal" title="Add Platform" @close="showAddPlatformModal = false">
       <form @submit.prevent="addPlatform">
@@ -35,80 +48,90 @@
       </form>
     </Modal>
 
+    <!-- Edit Platform Modal -->
+    <Modal :show="showEditPlatformModal" title="Edit Platform" @close="cancelEditPlatform">
+      <form @submit.prevent="savePlatform" v-if="editingPlatform">
+        <div class="form-group">
+          <label class="form-label">Platform Name</label>
+          <input v-model="editingPlatform.editName" type="text" class="form-input" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select v-model="editingPlatform.editCategoryId" class="form-input" required>
+            <option value="" disabled>Select Category</option>
+            <option v-for="cat in activeCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading.plat">
+          {{ loading.plat ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </form>
+    </Modal>
+
     <div class="grid-2col">
       <!-- Categories Section -->
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="font-weight: 600; margin: 0;">Categories</h3>
+          <h3 style="font-weight: 600; margin: 0;">
+            Categories
+            <Tooltip title="Asset Categories" description="Categorize your investment platforms into classes like Stocks, Crypto, Real Estate, etc." example="Stocks, Cash, Retirement" />
+          </h3>
           <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;" @click="showAddCategoryModal = true">+ Add Category</button>
         </div>
 
         <ul style="list-style: none; padding: 0;">
           <li v-for="cat in categories" :key="cat.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">
             <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; flex-wrap: wrap;">
-              <span v-if="!cat.isEditing" :class="{ 'text-muted': !cat.is_active }">{{ cat.name }}</span>
-              <input v-else v-model="cat.editName" type="text" class="form-input" style="padding: 0.25rem 0.5rem; margin-right: 0.5rem; min-width: 120px;" @keyup.enter="saveCategory(cat)" />
+              <span :class="{ 'text-muted': !cat.is_active }">{{ cat.name }}</span>
               
               <span v-if="!cat.is_active" class="text-danger" style="font-size: 0.75rem; border: 1px solid var(--danger); padding: 0.1rem 0.3rem; border-radius: 4px;">Archived</span>
               <span v-if="cat.is_default" class="text-muted" style="font-size: 0.75rem; border: 1px solid var(--text-muted); padding: 0.1rem 0.3rem; border-radius: 4px;">Default</span>
             </div>
             <div style="display: flex; gap: 0.5rem;">
               <template v-if="!cat.is_default">
-                <template v-if="!cat.isEditing">
-                  <button @click="editCategory(cat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Edit</button>
-                  <button @click="toggleCategoryStatus(cat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" :class="{ 'text-success': !cat.is_active, 'text-danger': cat.is_active }">
-                    {{ cat.is_active ? 'Archive' : 'Unarchive' }}
-                  </button>
-                </template>
-                <template v-else>
-                  <button @click="saveCategory(cat)" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Save</button>
-                  <button @click="cat.isEditing = false" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Cancel</button>
-                </template>
+                <button @click="openEditCategory(cat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Edit</button>
+                <button @click="toggleCategoryStatus(cat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" :class="{ 'text-success': !cat.is_active, 'text-danger': cat.is_active }">
+                  {{ cat.is_active ? 'Archive' : 'Unarchive' }}
+                </button>
               </template>
             </div>
           </li>
+          <li v-if="categories.length === 0" style="padding: 1.5rem; text-align: center;">
+            <span style="font-size: 1.5rem;">🏷️</span>
+            <p class="text-muted" style="margin: 0.5rem 0 0; font-size: 0.875rem;">No categories yet. Create one first before adding platforms.</p>
+          </li>
         </ul>
       </div>
-
+ 
       <!-- Platforms Section -->
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="font-weight: 600; margin: 0;">Platforms</h3>
+          <h3 style="font-weight: 600; margin: 0;">
+            Platforms
+            <Tooltip title="Investment Platforms" description="Define the platforms, brokers, or apps where your assets are held." example="IBKR, Luno, EPF, etc." />
+          </h3>
           <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;" @click="showAddPlatformModal = true">+ Add Platform</button>
         </div>
-
+ 
         <ul style="list-style: none; padding: 0;">
+          <li v-if="platforms.length === 0" style="padding: 1.5rem; text-align: center;">
+            <span style="font-size: 1.5rem;">📦</span>
+            <p class="text-muted" style="margin: 0.5rem 0 0; font-size: 0.875rem;">No platforms yet. Add a category first, then create platforms to track assets like Binance, ASB, etc.</p>
+          </li>
           <li v-for="plat in platforms" :key="plat.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.5rem;">
             <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 200px; flex-wrap: wrap;">
-              <template v-if="!plat.isEditing">
-                <span :class="{ 'text-muted': !plat.is_active }">{{ plat.name }}</span>
-                <span class="text-muted" style="font-size: 0.875rem; margin-left: 0.5rem;">({{ getCategoryName(plat.category) }})</span>
-              </template>
-              <template v-else>
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; width: 100%;">
-                  <input v-model="plat.editName" type="text" class="form-input" style="padding: 0.25rem 0.5rem; flex: 1; min-width: 100px;" />
-                  <select v-model="plat.editCategoryId" class="form-input" style="padding: 0.25rem 0.5rem; flex: 1; min-width: 100px;">
-                    <option value="" disabled>Select Category</option>
-                    <option v-for="cat in activeCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-                  </select>
-                </div>
-              </template>
+              <span :class="{ 'text-muted': !plat.is_active }">{{ plat.name }}</span>
+              <span class="text-muted" style="font-size: 0.875rem; margin-left: 0.5rem;">({{ getCategoryName(plat.category) }})</span>
               
               <span v-if="!plat.is_active" class="text-danger" style="font-size: 0.75rem; border: 1px solid var(--danger); padding: 0.1rem 0.3rem; border-radius: 4px;">Archived</span>
               <span v-if="plat.is_default" class="text-muted" style="font-size: 0.75rem; border: 1px solid var(--text-muted); padding: 0.1rem 0.3rem; border-radius: 4px;">Default</span>
             </div>
             <div style="display: flex; gap: 0.5rem;">
               <template v-if="!plat.is_default">
-                <template v-if="!plat.isEditing">
-                  <button @click="editPlatform(plat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Edit</button>
-                  <button @click="togglePlatformStatus(plat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" :class="{ 'text-success': !plat.is_active, 'text-danger': plat.is_active }">
-                    {{ plat.is_active ? 'Archive' : 'Unarchive' }}
-                  </button>
-                </template>
-                <template v-else>
-                  <button @click="savePlatform(plat)" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Save</button>
-                  <button @click="plat.isEditing = false" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Cancel</button>
-                </template>
+                <button @click="openEditPlatform(plat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">Edit</button>
+                <button @click="togglePlatformStatus(plat)" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" :class="{ 'text-success': !plat.is_active, 'text-danger': plat.is_active }">
+                  {{ plat.is_active ? 'Archive' : 'Unarchive' }}
+                </button>
               </template>
             </div>
           </li>
@@ -123,6 +146,7 @@ import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import SearchableSelect from '@/components/SearchableSelect.vue'
+import Tooltip from '@/components/Tooltip.vue'
 
 const categories = ref([])
 const platforms = ref([])
@@ -132,6 +156,10 @@ const newPlatformCategoryId = ref('')
 const loading = ref({ cat: false, plat: false })
 const showAddCategoryModal = ref(false)
 const showAddPlatformModal = ref(false)
+const showEditCategoryModal = ref(false)
+const editingCategory = ref(null)
+const showEditPlatformModal = ref(false)
+const editingPlatform = ref(null)
 
 const activeCategories = computed(() => categories.value.filter(c => c.is_active))
 
@@ -185,16 +213,32 @@ const addPlatform = async () => {
   } catch (e) { console.error(e) } finally { loading.value.plat = false }
 }
 
-const editCategory = (cat) => {
-  cat.isEditing = true
+const openEditCategory = (cat) => {
+  editingCategory.value = {
+    ...cat,
+    editName: cat.name
+  }
+  showEditCategoryModal.value = true
 }
 
-const saveCategory = async (cat) => {
+const cancelEditCategory = () => {
+  showEditCategoryModal.value = false
+  editingCategory.value = null
+}
+
+const saveCategory = async () => {
+  const cat = editingCategory.value
+  if (!cat || !cat.editName.trim()) return
+  loading.value.cat = true
   try {
     await api.patch(`/assets/categories/${cat.id}/`, { name: cat.editName })
-    cat.name = cat.editName
-    cat.isEditing = false
-  } catch (e) { console.error(e) }
+    cancelEditCategory()
+    await fetchCategories()
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loading.value.cat = false
+  }
 }
 
 const toggleCategoryStatus = async (cat) => {
@@ -205,21 +249,36 @@ const toggleCategoryStatus = async (cat) => {
   } catch (e) { console.error(e) }
 }
 
-const editPlatform = (plat) => {
-  plat.editCategoryId = plat.category || ''
-  plat.isEditing = true
+const openEditPlatform = (plat) => {
+  editingPlatform.value = {
+    ...plat,
+    editName: plat.name,
+    editCategoryId: plat.category || ''
+  }
+  showEditPlatformModal.value = true
 }
 
-const savePlatform = async (plat) => {
+const cancelEditPlatform = () => {
+  showEditPlatformModal.value = false
+  editingPlatform.value = null
+}
+
+const savePlatform = async () => {
+  const plat = editingPlatform.value
+  if (!plat || !plat.editName.trim() || !plat.editCategoryId) return
+  loading.value.plat = true
   try {
     await api.patch(`/assets/platforms/${plat.id}/`, { 
       name: plat.editName,
       category: plat.editCategoryId
     })
-    plat.name = plat.editName
-    plat.category = plat.editCategoryId
-    plat.isEditing = false
-  } catch (e) { console.error(e) }
+    cancelEditPlatform()
+    await fetchPlatforms()
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loading.value.plat = false
+  }
 }
 
 const togglePlatformStatus = async (plat) => {

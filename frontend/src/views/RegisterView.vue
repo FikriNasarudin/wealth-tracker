@@ -113,6 +113,8 @@ const register = async () => {
     
     localStorage.setItem('access_token', data.access)
     localStorage.setItem('refresh_token', data.refresh)
+    // Clear any previously dismissed onboarding so new user sees the welcome guide
+    localStorage.removeItem('dismissed_onboarding')
     router.push('/')
   } catch (err) {
     if (err.response?.data?.email) {
