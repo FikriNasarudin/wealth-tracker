@@ -1,5 +1,5 @@
 <template>
-  <div class="searchable-select" ref="containerRef" :class="{ 'is-disabled': disabled }">
+  <div class="searchable-select" ref="containerRef" :class="{ 'is-disabled': disabled, 'is-open': isOpen }">
     <div 
       class="select-trigger" 
       :class="{ 'is-open': isOpen }"
@@ -210,6 +210,11 @@ const scrollToHighlighted = () => {
   position: relative;
   width: 100%;
   user-select: none;
+  z-index: 1;
+}
+
+.searchable-select.is-open {
+  z-index: 9999;
 }
 
 .select-trigger {
@@ -253,7 +258,7 @@ const scrollToHighlighted = () => {
   top: 105%;
   left: 0;
   right: 0;
-  background-color: var(--bg-card);
+  background-color: #121828;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);

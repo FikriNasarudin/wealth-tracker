@@ -1,6 +1,6 @@
 <template>
   <div class="main-content">
-    <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+    <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 50;">
       <div>
         <h1 style="font-weight: 600;">Liabilities Overview</h1>
         <p class="text-muted">Track your outstanding debts and loans.</p>
@@ -10,11 +10,7 @@
           <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           Help
         </button>
-        <span class="text-muted">Period:</span>
-        <select v-model="selectedMonth" class="form-input" style="width: 120px;" @change="handleFilterChange">
-          <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
-        </select>
-        <input v-model="selectedYear" type="number" min="2000" max="2100" class="form-input" style="width: 100px;" @change="handleFilterChange" />
+        <SearchableSelect v-model="selectedPeriod" :options="trendOptions" @change="handleFilterChange" placeholder="Select Period" style="width: 140px;" />
         <select v-model="filterLender" class="form-input" style="width: 150px;" @change="handleFilterChange">
           <option value="">All Lenders</option>
           <option v-for="l in lenders" :key="l.id" :value="l.id">{{ l.name }}</option>
@@ -302,6 +298,18 @@ import SearchableSelect from '@/components/SearchableSelect.vue'
 const d = new Date()
 const selectedMonth = ref(d.getMonth() + 1)
 const selectedYear = ref(d.getFullYear())
+const selectedPeriod = computed({
+  get() {
+    return `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`
+  },
+  set(val) {
+    if (val) {
+      const [y, m] = val.split('-')
+      selectedYear.value = Number(y)
+      selectedMonth.value = Number(m)
+    }
+  }
+})
 const currentYear = d.getFullYear()
 
 const debtProgressStart = ref(`${currentYear}-01`)
@@ -665,6 +673,11 @@ onMounted(async () => {
         })
         selectedMonth.value = latest.month
         selectedYear.value = latest.year
+
+        // Set all chart end dates to the latest available data date
+        const latestStr = `${latest.year}-${String(latest.month).padStart(2, '0')}`
+        debtProgressEnd.value = latestStr
+        origVsRemEnd.value = latestStr
       }
     } catch(e) {
       console.error(e)

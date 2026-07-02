@@ -8,21 +8,11 @@
       <button class="btn btn-primary" @click="openModal()">+ Add Snapshot</button>
     </header>
 
-    <div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card" style="margin-bottom: 1.5rem; position: relative; z-index: 50;">
       <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 150px;">
-          <label class="form-label">Month</label>
-          <select v-model="filters.month" class="form-input">
-            <option value="">All Months</option>
-            <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
-          </select>
-        </div>
-        <div style="flex: 1; min-width: 150px;">
-          <label class="form-label">Year</label>
-          <select v-model="filters.year" class="form-input">
-            <option value="">All Years</option>
-            <option v-for="y in yearsList" :key="y" :value="y">{{ y }}</option>
-          </select>
+          <label class="form-label">Period</label>
+          <SearchableSelect v-model="filters.period" :options="periodOptions" placeholder="All Periods" />
         </div>
         <div style="flex: 1; min-width: 150px;">
           <label class="form-label">Category</label>
@@ -158,22 +148,68 @@ const lenderOptions = computed(() => {
   return lenders.value.map(l => ({ value: l.id, label: l.name }))
 })
 
+const d = new Date()
+const periodOptions = ref([])
+
+const generatePeriodOptions = () => {
+  let oldestY = null
+  let oldestM = null
+  
+  if (history.value && history.value.length > 0) {
+    history.value.forEach(item => {
+      const itemY = Number(item.year)
+      const itemM = Number(item.month)
+      if (itemY && itemM) {
+        if (!oldestY || itemY < oldestY || (itemY === oldestY && itemM < oldestM)) {
+          oldestY = itemY
+          oldestM = itemM
+        }
+      }
+    })
+  }
+  
+  const options = [{ value: '', label: 'All Periods' }]
+  const currentY = d.getFullYear()
+  const currentM = d.getMonth() + 1
+  
+  let startYear = oldestY || (currentY - 2)
+  let startMonth = oldestM || 1
+  
+  const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  
+  let y = startYear
+  let m = startMonth
+  
+  while (y < currentY || (y === currentY && m <= currentM)) {
+    const val = `${y}-${String(m).padStart(2, '0')}`
+    const lbl = `${shortMonths[m - 1]} ${y}`
+    options.push({ value: val, label: lbl })
+    m++
+    if (m > 12) {
+      m = 1
+      y++
+    }
+  }
+  
+  periodOptions.value = options
+}
 
 const filters = ref({
-  month: '',
-  year: '',
+  period: '',
   category: '',
   lender: ''
 })
 
 const clearFilters = () => {
-  filters.value = { month: '', year: '', category: '', lender: '' }
+  filters.value = { period: '', category: '', lender: '' }
 }
 
 const filteredHistory = computed(() => {
   return history.value.filter(item => {
-    if (filters.value.month && item.month !== parseInt(filters.value.month)) return false
-    if (filters.value.year && item.year !== parseInt(filters.value.year)) return false
+    if (filters.value.period) {
+      const [y, m] = filters.value.period.split('-').map(Number)
+      if (item.year !== y || item.month !== m) return false
+    }
     if (filters.value.category && item.category_name !== filters.value.category) return false
     if (filters.value.lender && item.lender_name !== filters.value.lender) return false
     return true
@@ -214,6 +250,7 @@ const fetchHistory = async () => {
       if (b.year !== a.year) return b.year - a.year
       return b.month - a.month
     })
+    generatePeriodOptions()
   } catch (e) {
     console.error(e)
   }

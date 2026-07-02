@@ -8,7 +8,7 @@
       <button class="btn btn-primary" @click="openModal()">+ Add Transaction</button>
     </header>
 
-    <div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card" style="margin-bottom: 1.5rem; position: relative; z-index: 50;">
       <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 150px;">
           <label class="form-label">Type</label>
@@ -34,8 +34,8 @@
           <input v-model="filters.search" type="text" class="form-input" placeholder="Search description..." />
         </div>
         <div style="flex: 1; min-width: 150px;">
-          <label class="form-label">Month</label>
-          <input v-model="filters.month" type="month" class="form-input" />
+          <label class="form-label">Period</label>
+          <SearchableSelect v-model="filters.month" :options="periodOptions" placeholder="All Periods" />
         </div>
         <div style="display: flex; align-items: flex-end;">
           <button class="btn btn-secondary" @click="clearFilters">Clear Filters</button>
@@ -152,6 +152,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import Pagination from '@/components/Pagination.vue'
+import SearchableSelect from '@/components/SearchableSelect.vue'
 
 const history = ref([])
 const showModal = ref(false)
@@ -161,6 +162,55 @@ const editingId = ref(null)
 const targets = ref([])
 const categories = ref([])
 const isNewCategory = ref(false)
+
+const d = new Date()
+const periodOptions = ref([])
+
+const generatePeriodOptions = () => {
+  let oldestY = null
+  let oldestM = null
+  
+  if (history.value && history.value.length > 0) {
+    history.value.forEach(item => {
+      if (item.date) {
+        const parts = item.date.split('-')
+        const itemY = Number(parts[0])
+        const itemM = Number(parts[1])
+        if (itemY && itemM) {
+          if (!oldestY || itemY < oldestY || (itemY === oldestY && itemM < oldestM)) {
+            oldestY = itemY
+            oldestM = itemM
+          }
+        }
+      }
+    })
+  }
+  
+  const options = [{ value: '', label: 'All Periods' }]
+  const currentY = d.getFullYear()
+  const currentM = d.getMonth() + 1
+  
+  let startYear = oldestY || (currentY - 2)
+  let startMonth = oldestM || 1
+  
+  const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  
+  let y = startYear
+  let m = startMonth
+  
+  while (y < currentY || (y === currentY && m <= currentM)) {
+    const val = `${y}-${String(m).padStart(2, '0')}`
+    const lbl = `${shortMonths[m - 1]} ${y}`
+    options.push({ value: val, label: lbl })
+    m++
+    if (m > 12) {
+      m = 1
+      y++
+    }
+  }
+  
+  periodOptions.value = options
+}
 
 const filters = ref({
   type: '',
@@ -229,6 +279,7 @@ const fetchHistory = async () => {
   try {
     const res = await api.get('/budgeting/transactions/')
     history.value = res.data.sort((a, b) => new Date(b.date) - new Date(a.date))
+    generatePeriodOptions()
   } catch (e) {
     console.error(e)
   }

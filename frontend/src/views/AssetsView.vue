@@ -1,6 +1,6 @@
 <template>
   <div class="main-content">
-    <header class="flex-responsive" style="margin-bottom: 2rem; gap: 1rem;">
+    <header class="flex-responsive" style="margin-bottom: 2rem; gap: 1rem; position: relative; z-index: 50;">
       <div>
         <h1 style="font-weight: 600;">Assets Overview</h1>
         <p class="text-muted">Track your portfolio allocation and profits.</p>
@@ -15,7 +15,7 @@
           <option value="">All Platforms</option>
           <option v-for="p in platforms" :key="p.id" :value="p.id">{{ p.name }}</option>
         </select>
-        <button id="tour-add-asset" class="btn btn-primary" @click="showModal = true">+ Add Snapshot</button>
+        <button id="tour-add-asset" class="btn btn-primary" @click="openAddModal">+ Add Snapshot</button>
       </div>
     </header>
 
@@ -152,10 +152,11 @@
           <BarChart v-if="compoundData.length > 0" :labels="compoundLabels" :datasets="compoundDatasets" />
         </div>
       </div>
+
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
-            Total Assets Over Time
+            Assets Over Time
             <Tooltip title="Total Assets Trend" description="Tracks the month-over-month performance and growth of your combined liquid and invested assets." example="Growth of savings plus stocks over 6 months" />
           </h3>
           <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
@@ -168,6 +169,7 @@
           <GraphLine v-if="assetsOverTimeData.length > 0" :labels="assetsOverTimeLabels" :datasets="assetDatasets" />
         </div>
       </div>
+
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
@@ -219,10 +221,48 @@
 
         <div class="form-group">
           <label class="form-label">Current Balance</label>
-          <input v-model="form.currentBalance" type="number" step="0.01" class="form-input" required />
+          <input v-model="form.currentBalance" type="number" step="0.01" class="form-input" required @input="recalculateAssetWeightValues" />
         </div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading">
+        <!-- Multi-asset Select and Weights/Values Inputs -->
+        <div class="form-group" style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+          <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Asset Allocations (Optional)</span>
+            <span class="text-muted" style="font-size: 0.75rem;">Total Allocated: {{ formatCurrency(totalAllocatedValue) }} / RM{{ formatCurrency(form.currentBalance || 0) }} ({{ totalAllocatedWeight.toFixed(1) }}%)</span>
+          </label>
+          
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <select v-model="selectedAssetToAdd" class="form-input" style="flex: 1;">
+              <option :value="null" disabled>Select Asset to Add</option>
+              <option v-for="a in activeAssets" :key="a.id" :value="a">{{ a.name }} ({{ a.category_name }})</option>
+            </select>
+            <button type="button" class="btn btn-secondary" @click="addAssetToSnapshotForm">Add Asset</button>
+          </div>
+
+          <div v-if="form.snapshotAssets.length > 0" style="display: flex; flex-direction: column; gap: 0.75rem; background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color);">
+            <div v-for="(sa, idx) in form.snapshotAssets" :key="sa.asset" style="display: flex; gap: 0.5rem; align-items: center;">
+              <span style="flex: 2; font-size: 0.875rem;">{{ sa.asset_name }}</span>
+              <div style="flex: 3; display: flex; gap: 0.5rem; align-items: center;">
+                <div style="position: relative; flex: 1;">
+                  <span style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--text-muted);">RM</span>
+                  <input v-model="sa.value" type="number" step="0.01" class="form-input" style="padding-left: 1.75rem; font-size: 0.8rem; height: 32px;" placeholder="Value" @input="onAssetValueInput(idx)" />
+                </div>
+                <div style="position: relative; flex: 1;">
+                  <input v-model="sa.weight" type="number" step="0.01" class="form-input" style="padding-right: 1.25rem; font-size: 0.8rem; height: 32px;" placeholder="Weight" @input="onAssetWeightInput(idx)" />
+                  <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--text-muted);">%</span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-danger" style="padding: 0.1rem 0.4rem; font-size: 0.75rem; height: 32px;" @click="removeAssetFromSnapshotForm(idx)">Remove</button>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-top: 0.25rem;" :class="isAllocationValid ? 'text-success' : 'text-danger'">
+              <span>Allocation Status:</span>
+              <span>{{ allocationStatusText }}</span>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading || (form.snapshotAssets.length > 0 && !isAllocationValid)">
           {{ loading ? 'Saving...' : 'Save Snapshot' }}
         </button>
       </form>
@@ -231,7 +271,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import PieChart from '@/components/PieChart.vue'
@@ -275,106 +315,121 @@ const investedChange = computed(() => calculateChange(totalInvested.value, prevT
 const balanceChange = computed(() => calculateChange(totalBalance.value, prevTotalBalance.value))
 const profitChange = computed(() => calculateChange(absoluteProfit.value, prevAbsoluteProfit.value))
 const percentageChange = computed(() => {
-  if (prevTotalInvested.value === 0) return null;
-  return profitPercentage.value - prevProfitPercentage.value;
+  return profitPercentage.value - prevProfitPercentage.value
 })
 
 const maxConcentration = computed(() => {
-  if (!byCategory.value || byCategory.value.length === 0 || totalBalance.value === 0) return null;
-  let maxCat = null;
-  let maxVal = 0;
-  for (const cat of byCategory.value) {
-    if (cat.balance > maxVal) {
-      maxVal = cat.balance;
-      maxCat = cat;
+  if (byCategory.value.length === 0) return null
+  const sorted = [...byCategory.value].sort((a, b) => b.balance - a.balance)
+  const top = sorted[0]
+  if (top.weight_percentage > 75) {
+    return {
+      category: top.category,
+      percentage: top.weight_percentage
     }
   }
-  const pct = (maxVal / totalBalance.value) * 100;
-  if (pct > 75) {
-    return { category: maxCat.category, percentage: pct };
-  }
-  return null;
+  return null
 })
+
+const selectedPeriod = ref('')
+const selectedMonth = ref(null)
+const selectedYear = ref(null)
 
 const d = new Date()
-const selectedMonth = ref(d.getMonth() + 1)
-const selectedYear = ref(d.getFullYear())
-const selectedPeriod = computed({
-  get() {
-    return `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`
-  },
-  set(val) {
-    if (val) {
-      const [y, m] = val.split('-')
-      selectedYear.value = Number(y)
-      selectedMonth.value = Number(m)
-    }
-  }
-})
 const currentYear = d.getFullYear()
+const currentMonth = d.getMonth() + 1
 
-const compoundStart = ref(`${currentYear}-01`)
+const compoundStart = ref(`${currentYear - 1}-01`)
 const compoundEnd = ref(`${currentYear}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+
 const assetsOverTimeStart = ref(`${currentYear}-01`)
 const assetsOverTimeEnd = ref(`${currentYear}-${String(d.getMonth() + 1).padStart(2, '0')}`)
-const assetProgressStart = ref(`${currentYear}-01`)
+
+const assetProgressStart = ref(`${currentYear - 1}-01`)
 const assetProgressEnd = ref(`${currentYear}-${String(d.getMonth() + 1).padStart(2, '0')}`)
 
-const trendOptions = ref([])
+const filterPlatform = ref('')
 
-const generateTrendOptions = (oldestYear, oldestMonth) => {
-  const options = []
-  const currentY = d.getFullYear()
-  const currentM = d.getMonth() + 1
-  
-  let startYear = oldestYear || (currentY - 2)
-  let startMonth = oldestMonth || 1
-  
-  const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  
-  let y = startYear
-  let m = startMonth
-  
-  while (y < currentY || (y === currentY && m <= currentM)) {
-    const val = `${y}-${String(m).padStart(2, '0')}`
-    const lbl = `${shortMonths[m - 1]} ${y}`
-    options.push({ value: val, label: lbl })
-    m++
-    if (m > 12) {
-      m = 1
-      y++
-    }
-  }
-  
-  trendOptions.value = options
-}
+const trendOptions = ref([])
 
 const fetchOldestDataDate = async () => {
   try {
     const res = await api.get('/assets/snapshots/')
-    let oldestY = null
-    let oldestM = null
-    
     if (res.data && res.data.length > 0) {
-      res.data.forEach(item => {
-        const itemY = Number(item.year)
-        const itemM = Number(item.month)
-        if (!oldestY || itemY < oldestY || (itemY === oldestY && itemM < oldestM)) {
-          oldestY = itemY
-          oldestM = itemM
-        }
+      const dates = res.data.map(d => ({ year: Number(d.year), month: Number(d.month) }))
+      dates.sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year
+        return a.month - b.month
       })
+      const oldest = dates[0]
+      
+      const options = []
+      let startYear = oldest.year
+      let startMonth = oldest.month
+      
+      const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      
+      let y = startYear
+      let m = startMonth
+      
+      while (y < currentYear || (y === currentYear && m <= currentMonth)) {
+        const val = `${y}-${String(m).padStart(2, '0')}`
+        const lbl = `${shortMonths[m - 1]} ${y}`
+        options.push({ value: val, label: lbl })
+        m++
+        if (m > 12) {
+          m = 1
+          y++
+        }
+      }
+      trendOptions.value = options
+      
+      if (!selectedPeriod.value && options.length > 0) {
+        selectedPeriod.value = options[options.length - 1].value
+        const [year, month] = selectedPeriod.value.split('-').map(Number)
+        selectedMonth.value = month
+        selectedYear.value = year
+      }
+      
+      if (options.length > 0) {
+        const earliestStr = options[0].value
+        compoundStart.value = earliestStr
+        assetsOverTimeStart.value = earliestStr
+        assetProgressStart.value = earliestStr
+      }
+    } else {
+      const options = []
+      const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      let m = 1
+      let y = currentYear - 1
+      while (y < currentYear || (y === currentYear && m <= currentMonth)) {
+        const val = `${y}-${String(m).padStart(2, '0')}`
+        const lbl = `${shortMonths[m - 1]} ${y}`
+        options.push({ value: val, label: lbl })
+        m++
+        if (m > 12) {
+          m = 1
+          y++
+        }
+      }
+      trendOptions.value = options
+      selectedPeriod.value = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
+      selectedMonth.value = currentMonth
+      selectedYear.value = currentYear
     }
-    
-    generateTrendOptions(oldestY, oldestM)
-  } catch(e) {
+  } catch (e) {
     console.error(e)
-    generateTrendOptions()
   }
 }
 
-const filterPlatform = ref('')
-const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+watch(selectedPeriod, (newVal) => {
+  if (newVal) {
+    const [year, month] = newVal.split('-').map(Number)
+    selectedMonth.value = month
+    selectedYear.value = year
+    handleFilterChange()
+  }
+})
 
 const handleFilterChange = async () => {
   dataLoading.value = true
@@ -493,6 +548,10 @@ const loading = ref(false)
 
 const categories = ref([])
 const platforms = ref([])
+const assetsList = ref([])
+const selectedAssetToAdd = ref(null)
+
+const activeAssets = computed(() => assetsList.value.filter(a => a.is_active))
 
 const getInitialForm = () => {
   const d = new Date()
@@ -501,7 +560,8 @@ const getInitialForm = () => {
     year: d.getFullYear(),
     platformId: null,
     totalInvested: '',
-    currentBalance: ''
+    currentBalance: '',
+    snapshotAssets: []
   }
 }
 
@@ -512,6 +572,90 @@ const platformOptions = computed(() => {
 })
 
 const formatCurrency = (val) => Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+// Form multi-asset helpers
+const addAssetToSnapshotForm = () => {
+  if (!selectedAssetToAdd.value) return
+  if (form.value.snapshotAssets.some(sa => sa.asset === selectedAssetToAdd.value.id)) {
+    alert('Asset already added.')
+    return
+  }
+  form.value.snapshotAssets.push({
+    asset: selectedAssetToAdd.value.id,
+    asset_name: selectedAssetToAdd.value.name,
+    weight: '',
+    value: ''
+  })
+  selectedAssetToAdd.value = null
+}
+
+const removeAssetFromSnapshotForm = (idx) => {
+  form.value.snapshotAssets.splice(idx, 1)
+}
+
+const onAssetValueInput = (idx) => {
+  const currentAsset = form.value.snapshotAssets[idx]
+  const totalVal = parseFloat(form.value.currentBalance || 0)
+  const val = parseFloat(currentAsset.value)
+
+  if (isNaN(val) || val <= 0) {
+    currentAsset.weight = ''
+    return
+  }
+
+  if (totalVal > 0) {
+    currentAsset.weight = ((val / totalVal) * 100).toFixed(2)
+  }
+}
+
+const onAssetWeightInput = (idx) => {
+  const currentAsset = form.value.snapshotAssets[idx]
+  const totalVal = parseFloat(form.value.currentBalance || 0)
+  const wt = parseFloat(currentAsset.weight)
+
+  if (isNaN(wt) || wt <= 0) {
+    currentAsset.value = ''
+    return
+  }
+
+  if (totalVal > 0) {
+    currentAsset.value = ((wt / 100) * totalVal).toFixed(2)
+  }
+}
+
+const recalculateAssetWeightValues = () => {
+  const totalVal = parseFloat(form.value.currentBalance || 0)
+  form.value.snapshotAssets.forEach((sa, idx) => {
+    if (sa.weight !== '') {
+      onAssetWeightInput(idx)
+    } else if (sa.value !== '') {
+      onAssetValueInput(idx)
+    }
+  })
+}
+
+const totalAllocatedValue = computed(() => {
+  return form.value.snapshotAssets.reduce((sum, sa) => sum + parseFloat(sa.value || 0), 0)
+})
+
+const totalAllocatedWeight = computed(() => {
+  return form.value.snapshotAssets.reduce((sum, sa) => sum + parseFloat(sa.weight || 0), 0)
+})
+
+const isAllocationValid = computed(() => {
+  if (form.value.snapshotAssets.length === 0) return true
+  const totalWeightVal = totalAllocatedWeight.value
+  return Math.abs(totalWeightVal - 100) <= 0.2
+})
+
+const allocationStatusText = computed(() => {
+  if (form.value.snapshotAssets.length === 0) return 'No assets allocated yet.'
+  const diff = totalAllocatedWeight.value - 100
+  if (Math.abs(diff) <= 0.2) {
+    return 'Allocation complete (100%).'
+  }
+  return diff < 0 ? `Under-allocated by ${Math.abs(diff).toFixed(1)}%.` : `Over-allocated by ${diff.toFixed(1)}%.`
+})
 
 const fetchYearlyData = async () => {
   try {
@@ -542,12 +686,14 @@ const fetchData = async () => {
 
 const fetchOptions = async () => {
   try {
-    const [catRes, platRes] = await Promise.all([
+    const [catRes, platRes, assetRes] = await Promise.all([
       api.get('/assets/categories/'),
-      api.get('/assets/platforms/')
+      api.get('/assets/platforms/'),
+      api.get('/assets/assets/')
     ])
     categories.value = catRes.data
     platforms.value = platRes.data
+    assetsList.value = assetRes.data
     
     if (platforms.value.length > 0 && !form.value.platformId) {
       form.value.platformId = platforms.value[0].id
@@ -555,6 +701,12 @@ const fetchOptions = async () => {
   } catch (e) {
     console.error(e)
   }
+}
+
+const openAddModal = () => {
+  form.value = getInitialForm()
+  fetchOptions()
+  showModal.value = true
 }
 
 const submitSnapshot = async () => {
@@ -566,12 +718,19 @@ const submitSnapshot = async () => {
       return
     }
 
+    const cleanAssets = form.value.snapshotAssets.map(sa => ({
+      asset: sa.asset,
+      weight: sa.weight === '' ? null : parseFloat(sa.weight),
+      value: sa.value === '' ? null : parseFloat(sa.value)
+    }))
+
     await api.post('/assets/snapshots/', {
       month: form.value.month,
       year: form.value.year,
       platform: form.value.platformId,
       total_invested: form.value.totalInvested,
-      current_balance: form.value.currentBalance
+      current_balance: form.value.currentBalance,
+      snapshot_assets: cleanAssets
     })
 
     showModal.value = false
@@ -606,6 +765,12 @@ onMounted(async () => {
         })
         selectedMonth.value = latest.month
         selectedYear.value = latest.year
+
+        // Set all chart end dates to the latest available data date
+        const latestStr = `${latest.year}-${String(latest.month).padStart(2, '0')}`
+        compoundEnd.value = latestStr
+        assetsOverTimeEnd.value = latestStr
+        assetProgressEnd.value = latestStr
       }
     } catch(e) {
       console.error(e)

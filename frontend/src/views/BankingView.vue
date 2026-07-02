@@ -29,20 +29,23 @@
           Your Accounts
           <Tooltip title="Your Accounts" description="Keep track of individual balances. Click 'Update Balance' at the end of every month to log a new snapshot." example="Maybank Savings: RM10,000" />
         </h3>
-        <button id="tour-add-account" class="btn btn-primary" @click="showAddAccountModal = true" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;">+ Add Account</button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary" @click="showManageTypesModal = true" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;">Manage Types</button>
+          <button id="tour-add-account" class="btn btn-primary" @click="openAddAccountModal" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;">+ Add Account</button>
+        </div>
       </div>
       <div v-if="activeAccounts.length === 0" style="text-align: center; padding: 3rem 2rem;">
         <div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>
         <h4 style="font-weight: 600; margin-bottom: 0.5rem;">No bank accounts yet</h4>
         <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1.25rem; max-width: 380px; margin-left: auto; margin-right: auto;">Add your cash, savings, or checking accounts to track your total liquid assets and emergency fund runway.</p>
-        <button class="btn btn-primary" @click="showAddAccountModal = true" style="padding: 0.6rem 1.5rem;">+ Add Your First Account</button>
+        <button class="btn btn-primary" @click="openAddAccountModal" style="padding: 0.6rem 1.5rem;">+ Add Your First Account</button>
       </div>
       <div v-else style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
         <div v-for="acc in activeAccounts" :key="acc.id" style="border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.5rem; position: relative;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
             <div>
               <div style="font-weight: 600; font-size: 1.125rem;">{{ acc.name }}</div>
-              <div class="text-muted" style="font-size: 0.875rem;">{{ acc.institution || 'Cash' }} &bull; {{ acc.type }}</div>
+              <div class="text-muted" style="font-size: 0.875rem;">{{ acc.institution || 'Cash' }} &bull; {{ acc.account_type_name }}</div>
             </div>
             <div style="display: flex; gap: 0.25rem; align-items: center;">
               <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @click="openUpdateModal(acc)" title="Update Balance">Update Balance</button>
@@ -82,7 +85,7 @@
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
             <div>
               <div style="font-weight: 600; font-size: 1rem; text-decoration: line-through;">{{ acc.name }}</div>
-              <div class="text-muted" style="font-size: 0.8rem;">{{ acc.institution || 'Cash' }} &bull; {{ acc.type }}</div>
+              <div class="text-muted" style="font-size: 0.8rem;">{{ acc.institution || 'Cash' }} &bull; {{ acc.account_type_name }}</div>
             </div>
             <div style="display: flex; gap: 0.25rem; align-items: center;">
               <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @click="restoreAccount(acc)" title="Restore Account">
@@ -113,18 +116,19 @@
         </div>
         <div class="form-group">
           <label class="form-label">Account Type</label>
-          <select v-model="accountForm.type" class="form-input" required>
-            <option value="CHECKING">Checking</option>
-            <option value="SAVINGS">Savings</option>
-            <option value="CASH">Physical Cash</option>
-            <option value="OTHER">Other</option>
+          <select v-model="accountForm.account_type" class="form-input" required>
+            <option value="" disabled>Select Account Type</option>
+            <option v-for="t in activeAccountTypes" :key="t.id" :value="t.id">{{ t.name }}</option>
           </select>
+          <p v-if="activeAccountTypes.length === 0" style="font-size: 0.75rem; color: var(--danger); margin-top: 0.25rem;">
+            Please create an Account Type first using "Manage Types".
+          </p>
         </div>
         <div class="form-group">
           <label class="form-label">Initial Balance (RM)</label>
           <input v-model="accountForm.initialBalance" type="number" step="0.01" class="form-input" required />
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading">
+        <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading || activeAccountTypes.length === 0">
           {{ loading ? 'Saving...' : 'Add Account' }}
         </button>
       </form>
@@ -150,6 +154,54 @@
         </button>
       </form>
     </Modal>
+
+    <!-- Manage Account Types Modal -->
+    <Modal :show="showManageTypesModal" title="Manage Account Types" @close="showManageTypesModal = false">
+      <div>
+        <form @submit.prevent="saveAccountType" style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; align-items: flex-end;">
+          <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <label class="form-label">New Account Type</label>
+            <input v-model="newTypeName" type="text" class="form-input" placeholder="e.g. Checking, Savings, Credit Card" required />
+          </div>
+          <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1rem;">Add</button>
+        </form>
+
+        <h4 style="font-weight: 600; margin-bottom: 0.75rem;">Active Types</h4>
+        <div v-if="activeAccountTypes.length === 0" class="text-muted" style="font-size: 0.9rem; padding: 1rem 0;">
+          No active account types.
+        </div>
+        <div v-else style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; margin-bottom: 1.5rem;">
+          <div v-for="type in activeAccountTypes" :key="type.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.25rem;">
+            <div v-if="editingTypeId === type.id" style="display: flex; gap: 0.5rem; width: 100%;">
+              <input v-model="editingTypeName" type="text" class="form-input" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" required />
+              <button class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @click="updateAccountType(type.id)">Save</button>
+              <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @click="editingTypeId = null">Cancel</button>
+            </div>
+            <div v-else style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+              <span>{{ type.name }}</span>
+              <div style="display: flex; gap: 0.25rem;">
+                <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @click="startEditType(type)">Rename</button>
+                <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @click="toggleArchiveType(type)" title="Archive">Archive</button>
+                <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @click="deleteAccountType(type)" title="Delete">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="archivedAccountTypes.length > 0">
+          <h4 style="font-weight: 600; margin-bottom: 0.75rem; color: var(--text-secondary);">Archived Types</h4>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 150px; overflow-y: auto;">
+            <div v-for="type in archivedAccountTypes" :key="type.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.25rem; opacity: 0.6;">
+              <span>{{ type.name }}</span>
+              <div style="display: flex; gap: 0.25rem;">
+                <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @click="toggleArchiveType(type)">Unarchive</button>
+                <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @click="deleteAccountType(type)" title="Delete">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Modal>
   </div>
 </template>
 
@@ -174,13 +226,22 @@ const startTour = () => {
 
 const accounts = ref([])
 const snapshots = ref([])
+const accountTypes = ref([])
 const loading = ref(false)
 
 const showAddAccountModal = ref(false)
 const showUpdateModal = ref(false)
+const showManageTypesModal = ref(false)
 
-const accountForm = ref({ name: '', institution: '', type: 'CHECKING', initialBalance: 0 })
+const accountForm = ref({ name: '', institution: '', account_type: '', initialBalance: 0 })
 const updateForm = ref({ accountId: null, month: 1, year: 2023, balance: 0 })
+
+const newTypeName = ref('')
+const editingTypeId = ref(null)
+const editingTypeName = ref('')
+
+const activeAccountTypes = computed(() => accountTypes.value.filter(t => t.is_active))
+const archivedAccountTypes = computed(() => accountTypes.value.filter(t => !t.is_active))
 
 const formatCurrency = (val) => Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -249,24 +310,40 @@ const deleteAccount = async (acc) => {
 
 const fetchData = async () => {
   try {
-    const [accRes, snapRes] = await Promise.all([
+    const [accRes, snapRes, typesRes] = await Promise.all([
       api.get('/banking/accounts/'),
-      api.get('/banking/snapshots/')
+      api.get('/banking/snapshots/'),
+      api.get('/banking/account-types/')
     ])
     accounts.value = accRes.data
     snapshots.value = snapRes.data
+    accountTypes.value = typesRes.data
   } catch (e) {
     console.error(e)
   }
 }
 
+const openAddAccountModal = () => {
+  accountForm.value = {
+    name: '',
+    institution: '',
+    account_type: activeAccountTypes.value[0]?.id || '',
+    initialBalance: 0
+  }
+  showAddAccountModal.value = true
+}
+
 const saveAccount = async () => {
+  if (!accountForm.value.account_type) {
+    alert('Please select an account type')
+    return
+  }
   loading.value = true
   try {
     const res = await api.post('/banking/accounts/', {
       name: accountForm.value.name,
       institution: accountForm.value.institution,
-      type: accountForm.value.type
+      account_type: accountForm.value.account_type
     })
     
     const d = new Date()
@@ -278,7 +355,7 @@ const saveAccount = async () => {
     })
     
     showAddAccountModal.value = false
-    accountForm.value = { name: '', institution: '', type: 'CHECKING', initialBalance: 0 }
+    accountForm.value = { name: '', institution: '', account_type: '', initialBalance: 0 }
     await fetchData()
   } catch (e) {
     console.error(e)
@@ -300,7 +377,6 @@ const openUpdateModal = (acc) => {
 const saveBalance = async () => {
   loading.value = true
   try {
-    // Check if snapshot for this month/year already exists
     const existing = snapshots.value.find(s => s.account === updateForm.value.accountId && s.month === updateForm.value.month && s.year === updateForm.value.year)
     
     if (existing) {
@@ -321,6 +397,61 @@ const saveBalance = async () => {
     alert('Failed to update balance')
   } finally {
     loading.value = false
+  }
+}
+
+const saveAccountType = async () => {
+  if (!newTypeName.value.trim()) return
+  try {
+    await api.post('/banking/account-types/', { name: newTypeName.value.trim() })
+    newTypeName.value = ''
+    await fetchData()
+  } catch (e) {
+    console.error(e)
+    alert(e.response?.data?.non_field_errors?.[0] || e.response?.data?.name?.[0] || 'Failed to add account type')
+  }
+}
+
+const startEditType = (type) => {
+  editingTypeId.value = type.id
+  editingTypeName.value = type.name
+}
+
+const updateAccountType = async (id) => {
+  if (!editingTypeName.value.trim()) return
+  try {
+    await api.patch(`/banking/account-types/${id}/`, { name: editingTypeName.value.trim() })
+    editingTypeId.value = null
+    await fetchData()
+  } catch (e) {
+    console.error(e)
+    alert(e.response?.data?.non_field_errors?.[0] || e.response?.data?.name?.[0] || 'Failed to update account type')
+  }
+}
+
+const toggleArchiveType = async (type) => {
+  try {
+    await api.patch(`/banking/account-types/${type.id}/`, { is_active: !type.is_active })
+    await fetchData()
+  } catch (e) {
+    console.error(e)
+    alert('Failed to update account type status')
+  }
+}
+
+const deleteAccountType = async (type) => {
+  const isUsed = accounts.value.some(acc => acc.account_type === type.id)
+  if (isUsed) {
+    alert(`Cannot delete "${type.name}" because it is currently used by one or more bank accounts. Please change their type or delete the accounts first.`)
+    return
+  }
+  if (!confirm(`Are you sure you want to permanently delete "${type.name}"?`)) return
+  try {
+    await api.delete(`/banking/account-types/${type.id}/`)
+    await fetchData()
+  } catch (e) {
+    console.error(e)
+    alert('Failed to delete account type')
   }
 }
 

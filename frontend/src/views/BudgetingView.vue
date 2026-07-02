@@ -1,6 +1,6 @@
 <template>
   <div class="main-content">
-    <header class="flex-responsive" style="margin-bottom: 2rem; gap: 1rem;">
+    <header class="flex-responsive" style="margin-bottom: 2rem; gap: 1rem; position: relative; z-index: 50;">
       <div>
         <h1 style="font-weight: 600;">Budgeting Overview</h1>
         <p class="text-muted">Monitor your cash flow and expenses.</p>
@@ -10,13 +10,7 @@
           <svg style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           Help
         </button>
-        <span class="text-muted" style="font-size: 0.875rem; margin-left: 0.5rem;">Period:</span>
-        <select v-model="selectedMonth" class="form-input" style="width: 120px;" @change="fetchData">
-          <option v-for="(m, i) in monthsList" :key="i" :value="i + 1">{{ m }}</option>
-        </select>
-        <select v-model="selectedYear" class="form-input" style="width: 95px;" @change="fetchData">
-          <option v-for="y in yearsList" :key="y" :value="y">{{ y }}</option>
-        </select>
+        <SearchableSelect v-model="selectedPeriod" :options="trendOptions" @change="fetchData" placeholder="Select Period" style="width: 140px;" />
       </div>
     </header>
 
@@ -501,6 +495,18 @@ const isNewCategory = ref(false)
 const d = new Date()
 const selectedMonth = ref(d.getMonth() + 1)
 const selectedYear = ref(d.getFullYear())
+const selectedPeriod = computed({
+  get() {
+    return `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`
+  },
+  set(val) {
+    if (val) {
+      const [y, m] = val.split('-')
+      selectedYear.value = Number(y)
+      selectedMonth.value = Number(m)
+    }
+  }
+})
 const currentYear = d.getFullYear()
 
 const trendStart = ref(`${currentYear}-01`)

@@ -7,11 +7,15 @@ This application allows you to track:
 2. **Investments**: Monthly portfolio snapshots, profit tracking, and asset allocation.
 3. **Liabilities**: Loan tracking, debt reduction, and remaining principal balances.
 
+> For service-specific details, see the dedicated READMEs:
+> - 🖥️ [Frontend README](./frontend/README.md) — Vue.js app setup and development
+> - ⚙️ [Backend README](./backend/README.md) — Django REST API setup and development
+
 ---
 
 ## 🚀 Homelab Deployment (Docker Compose)
 
-Wealth Tracker is built for containerized environments. The easiest and officially supported way to run the application is using Docker Compose. 
+Wealth Tracker is built for containerized environments. The easiest and officially supported way to run the application is using Docker Compose.
 
 ### 1. Prerequisites
 Ensure you have Docker and Docker Compose installed on your system.
@@ -81,35 +85,6 @@ For advanced homelab users, standard Kubernetes manifests are provided.
    ```
 
 ---
-
-## 🛠️ Local Development (Contributors)
-
-If you want to contribute to the code or run it locally for testing:
-
-### 1. Start the Database
-Start the MySQL container locally:
-```bash
-docker compose up -d db
-```
-
-### 2. Run the Django Backend
-Navigate into the `backend` directory and set up a Python virtual environment:
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-```
-
-### 3. Run the Vue.js Frontend
-Open a new terminal window, navigate into the `frontend` directory:
-```bash
-cd frontend
-npm install
-npm run dev
-```
 
 ## 📝 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

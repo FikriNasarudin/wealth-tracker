@@ -1,7 +1,15 @@
 from rest_framework import serializers
-from .models import BankAccount, BankAccountSnapshot
+from .models import BankAccount, BankAccountSnapshot, AccountType
+
+class AccountTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccountType
+        fields = '__all__'
+        extra_kwargs = {'user': {'read_only': True}}
 
 class BankAccountSerializer(serializers.ModelSerializer):
+    account_type_name = serializers.CharField(source='account_type.name', read_only=True)
+
     class Meta:
         model = BankAccount
         fields = '__all__'

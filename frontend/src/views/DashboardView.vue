@@ -1,6 +1,6 @@
 <template>
   <div class="main-content">
-    <header class="flex-responsive" style="margin-bottom: 2rem; gap: 1rem;">
+    <header class="flex-responsive" style="margin-bottom: 2rem; gap: 1rem; position: relative; z-index: 50;">
       <h1 style="font-weight: 600;">Dashboard</h1>
       <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
         <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
@@ -574,7 +574,7 @@ const fetchData = async () => {
   try {
     const res = await api.get(`/budgeting/transactions/summary/?month=${month}&year=${year}`)
     currentMonthIncome.value = res.data.total_income || 0
-    currentMonthExpenses.value = res.data.total_expense || 0
+    currentMonthExpenses.value = res.data.total_expenses || 0
     currentMonthNetCashFlow.value = res.data.net_cash_flow || 0
   } catch(e) {
     console.error(e)
@@ -597,9 +597,10 @@ const fetchData = async () => {
 
 onMounted(async () => {
   try {
-    const [assetsRes, bankingRes] = await Promise.all([
+    const [assetsRes, bankingRes, txRes] = await Promise.all([
       api.get('/assets/snapshots/'),
-      api.get('/banking/snapshots/')
+      api.get('/banking/snapshots/'),
+      api.get('/budgeting/transactions/')
     ])
     
     let latest = null
@@ -626,6 +627,11 @@ onMounted(async () => {
     if (latest) {
       selectedMonth.value = latest.month
       selectedYear.value = latest.year
+
+      // Asset and progress charts: end at latest snapshot date
+      const latestStr = `${latest.year}-${String(latest.month).padStart(2, '0')}`
+      assetsOverTimeEnd.value = latestStr
+      assetProgressEnd.value = latestStr
     }
   } catch(e) {
     console.error(e)

@@ -273,6 +273,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 date__month=m_int
             ).values_list('subscription_id', flat=True))
             
+            all_subs = list(subs)  # keep full list for budget limit computation
             active_subs = []
             for s in subs:
                 paused = s.paused_months or []
@@ -285,7 +286,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
                     continue
                     
                 active_subs.append(s)
-            all_subs = list(subs)  # keep full list for budget limit computation
             subs = active_subs
         else:
             all_subs = list(subs)

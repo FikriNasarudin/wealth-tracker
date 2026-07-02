@@ -2,15 +2,30 @@ from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import models
-from .models import BankAccount, BankAccountSnapshot
-from .serializers import BankAccountSerializer, BankAccountSnapshotSerializer
+from .models import BankAccount, BankAccountSnapshot, AccountType
+from .serializers import BankAccountSerializer, BankAccountSnapshotSerializer, AccountTypeSerializer
+
+class AccountTypeViewSet(viewsets.ModelViewSet):
+    serializer_class = AccountTypeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = AccountType.objects.filter(user=self.request.user)
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            is_active = is_active.lower() in ['true', '1']
+            qs = qs.filter(is_active=is_active)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class BankAccountViewSet(viewsets.ModelViewSet):
     serializer_class = BankAccountSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = BankAccount.objects.filter(user=self.request.user)
+        qs = BankAccount.objects.filter(user=self.request.user).select_related('account_type')
         is_active = self.request.query_params.get('is_active')
         if is_active is not None:
             is_active = is_active.lower() in ['true', '1']
