@@ -38,10 +38,6 @@
           <label class="form-label">Platform Name</label>
           <input v-model="newPlatformName" type="text" class="form-input" placeholder="e.g. Binance, Luno" required />
         </div>
-        <div class="form-group">
-          <label class="form-label">Category</label>
-          <SearchableSelect v-model="newPlatformCategoryId" :options="activeCategoryOptions" placeholder="Select Category" />
-        </div>
         <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading.plat">
           {{ loading.plat ? 'Saving...' : 'Add Platform' }}
         </button>
@@ -54,13 +50,6 @@
         <div class="form-group">
           <label class="form-label">Platform Name</label>
           <input v-model="editingPlatform.editName" type="text" class="form-input" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Category</label>
-          <select v-model="editingPlatform.editCategoryId" class="form-input" required>
-            <option value="" disabled>Select Category</option>
-            <option v-for="cat in activeCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-          </select>
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%" :disabled="loading.plat">
           {{ loading.plat ? 'Saving...' : 'Save Changes' }}
@@ -153,12 +142,11 @@
         <ul style="list-style: none; padding: 0;">
           <li v-if="platforms.length === 0" style="padding: 1.5rem; text-align: center;">
             <span style="font-size: 1.5rem;">📦</span>
-            <p class="text-muted" style="margin: 0.5rem 0 0; font-size: 0.875rem;">No platforms yet. Add a category first, then create platforms to track assets like Binance, ASB, etc.</p>
+            <p class="text-muted" style="margin: 0.5rem 0 0; font-size: 0.875rem;">No platforms yet. Add a platform to track assets like Binance, ASB, etc.</p>
           </li>
           <li v-for="plat in platforms" :key="plat.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.5rem;">
             <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 200px; flex-wrap: wrap;">
               <span :class="{ 'text-muted': !plat.is_active }">{{ plat.name }}</span>
-              <span class="text-muted" style="font-size: 0.875rem; margin-left: 0.5rem;">({{ getCategoryName(plat.category) }})</span>
               
               <span v-if="!plat.is_active" class="text-danger" style="font-size: 0.75rem; border: 1px solid var(--danger); padding: 0.1rem 0.3rem; border-radius: 4px;">Archived</span>
               <span v-if="plat.is_default" class="text-muted" style="font-size: 0.75rem; border: 1px solid var(--text-muted); padding: 0.1rem 0.3rem; border-radius: 4px;">Default</span>
@@ -267,7 +255,7 @@ const fetchCategories = async () => {
 const fetchPlatforms = async () => {
   try {
     const res = await api.get('/assets/platforms/')
-    platforms.value = res.data.map(p => ({ ...p, isEditing: false, editName: p.name, editCategoryId: p.category || '' }))
+    platforms.value = res.data.map(p => ({ ...p, isEditing: false, editName: p.name }))
   } catch (e) { console.error(e) }
 }
 
@@ -290,15 +278,13 @@ const addCategory = async () => {
 }
 
 const addPlatform = async () => {
-  if (!newPlatformName.value.trim() || !newPlatformCategoryId.value) return
+  if (!newPlatformName.value.trim()) return
   loading.value.plat = true
   try {
     await api.post('/assets/platforms/', { 
-      name: newPlatformName.value,
-      category: newPlatformCategoryId.value
+      name: newPlatformName.value
     })
     newPlatformName.value = ''
-    newPlatformCategoryId.value = ''
     showAddPlatformModal.value = false
     await fetchPlatforms()
   } catch (e) { console.error(e) } finally { loading.value.plat = false }
@@ -358,8 +344,7 @@ const toggleCategoryStatus = async (cat) => {
 const openEditPlatform = (plat) => {
   editingPlatform.value = {
     ...plat,
-    editName: plat.name,
-    editCategoryId: plat.category || ''
+    editName: plat.name
   }
   showEditPlatformModal.value = true
 }
@@ -371,12 +356,11 @@ const cancelEditPlatform = () => {
 
 const savePlatform = async () => {
   const plat = editingPlatform.value
-  if (!plat || !plat.editName.trim() || !plat.editCategoryId) return
+  if (!plat || !plat.editName.trim()) return
   loading.value.plat = true
   try {
     await api.patch(`/assets/platforms/${plat.id}/`, { 
-      name: plat.editName,
-      category: plat.editCategoryId
+      name: plat.editName
     })
     cancelEditPlatform()
     await fetchPlatforms()

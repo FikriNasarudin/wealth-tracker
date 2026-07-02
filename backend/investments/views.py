@@ -64,16 +64,10 @@ class InvestmentSnapshotViewSet(viewsets.ModelViewSet):
         return qs.prefetch_related('snapshot_assets__asset__category')
 
     def perform_create(self, serializer):
-        platform = serializer.validated_data.get('platform')
-        category = platform.category if platform else None
-        serializer.save(user=self.request.user, category=category)
+        serializer.save(user=self.request.user)
 
     def perform_update(self, serializer):
-        platform = serializer.validated_data.get('platform')
-        if platform:
-            serializer.save(category=platform.category)
-        else:
-            serializer.save()
+        serializer.save()
 
     @action(detail=False, methods=['get'])
     def allocation(self, request):
@@ -88,7 +82,7 @@ class InvestmentSnapshotViewSet(viewsets.ModelViewSet):
         total_portfolio = qs.aggregate(total=Sum('current_balance'))['total'] or Decimal('0.00')
         total_invested = qs.aggregate(total=Sum('total_invested'))['total'] or Decimal('0.00')
         
-        # Calculate dynamic Category allocation based on Snapshot Assets and falling back to Platform Categories
+        # Calculate dynamic Category allocation based on Snapshot Assets and falling back to direct Snapshot Categories
         category_allocations = defaultdict(Decimal)
         platform_allocations = defaultdict(Decimal)
         
@@ -108,12 +102,10 @@ class InvestmentSnapshotViewSet(viewsets.ModelViewSet):
                     cat_name = snap_asset.asset.category.name if snap_asset.asset.category else 'Uncategorized'
                     category_allocations[cat_name] += asset_val
             else:
-                # Fallback to the direct category or platform category
+                # Fallback to the direct category of the snapshot
                 cat_name = 'Uncategorized'
                 if snap.category:
                     cat_name = snap.category.name
-                elif snap.platform and snap.platform.category:
-                    cat_name = snap.platform.category.name
                 category_allocations[cat_name] += snap_balance
 
         # Format allocation response list

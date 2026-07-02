@@ -56,23 +56,12 @@ class InvestmentSnapshotSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         snapshot_assets_data = validated_data.pop('snapshot_assets', [])
-        # Determine category fallback
-        platform = validated_data.get('platform')
-        category = platform.category if platform else None
-        validated_data['category'] = category
-
         snapshot = InvestmentSnapshot.objects.create(**validated_data)
         self._save_assets(snapshot, snapshot_assets_data)
         return snapshot
 
     def update(self, instance, validated_data):
         snapshot_assets_data = validated_data.pop('snapshot_assets', None)
-        
-        # Keep category updated to platform category if present
-        platform = validated_data.get('platform', instance.platform)
-        if platform:
-            validated_data['category'] = platform.category
-
         instance = super().update(instance, validated_data)
 
         if snapshot_assets_data is not None:
