@@ -23,7 +23,7 @@
          <button class="btn" :class="statusTab === 'ARCHIVED' ? 'btn-primary' : 'btn-secondary'" style="padding: 0.5rem 1rem;" @click="statusTab = 'ARCHIVED'">Archived</button>
        </div>
 
-       <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+       <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
          <thead>
            <tr style="border-bottom: 1px solid var(--border-color);">
              <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Name</th>
@@ -43,24 +43,24 @@
               </td>
             </tr>
            <tr v-for="sub in paginatedSubs" :key="sub.id" style="border-bottom: 1px solid var(--border-color);">
-             <td style="padding: 0.75rem 0; font-weight: 500;">{{ sub.name }}</td>
-             <td style="padding: 0.75rem 0; color: var(--text-muted);">{{ sub.category_name || '-' }}</td>
-             <td style="padding: 0.75rem 0;">
+             <td data-label="Name" style="padding: 0.75rem 0; font-weight: 500;">{{ sub.name }}</td>
+             <td data-label="Category" style="padding: 0.75rem 0; color: var(--text-muted);">{{ sub.category_name || '-' }}</td>
+             <td data-label="Type" style="padding: 0.75rem 0;">
                <span :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'">{{ sub.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
              </td>
-             <td style="padding: 0.75rem 0;">
+             <td data-label="Amount" style="padding: 0.75rem 0;">
                RM{{ formatCurrency(sub.amount) }} <span class="text-muted">/ {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}</span>
                <div v-if="sub.start_date || sub.end_date" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
                  Active: {{ sub.start_date || 'Forever' }} to {{ sub.end_date || 'Forever' }}
                </div>
              </td>
-             <td style="padding: 0.75rem 0;">
+             <td data-label="Status" style="padding: 0.75rem 0;">
                <span v-if="sub.status === 'ARCHIVED'" class="text-muted">Archived</span>
                <span v-else-if="loggedIds.includes(sub.id)" class="text-success" style="font-weight: 500;">✓ Logged</span>
                <span v-else-if="sub.paused_months && sub.paused_months.includes(currentMonthKey)" class="text-warning">⏸ Paused</span>
                <span v-else class="text-muted">Pending</span>
              </td>
-             <td style="padding: 0.75rem 0; text-align: right; display: flex; justify-content: flex-end; gap: 0.5rem;">
+             <td data-label="Actions" style="padding: 0.75rem 0; text-align: right; display: flex; justify-content: flex-end; gap: 0.5rem;">
                <button v-if="sub.status === 'ACTIVE' && !loggedIds.includes(sub.id) && !(sub.paused_months && sub.paused_months.includes(currentMonthKey))" class="btn btn-primary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="logMonth(sub.id)">Log {{ currentMonthStr }}</button>
                <button v-if="sub.status === 'ACTIVE' && !loggedIds.includes(sub.id) && !(sub.paused_months && sub.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="pauseMonth(sub.id)">Pause</button>
                <button v-if="sub.status === 'ACTIVE' && !loggedIds.includes(sub.id) && (sub.paused_months && sub.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="resumeMonth(sub.id)">Resume</button>

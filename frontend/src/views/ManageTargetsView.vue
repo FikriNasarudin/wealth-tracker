@@ -24,7 +24,7 @@
     </div>
 
     <div v-if="activeTab === 'TARGETS'" class="card" style="margin-bottom: 2rem;">
-       <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+       <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
          <thead>
            <tr style="border-bottom: 1px solid var(--border-color);">
              <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Category / Name</th>
@@ -48,18 +48,18 @@
              :style="row.isDefault ? 'opacity: 0.65;' : ''"
            >
              <!-- Category / Name -->
-             <td style="padding: 0.75rem 0; font-weight: 500;">
+             <td data-label="Category / Name" style="padding: 0.75rem 0; font-weight: 500;">
                <span v-if="row.isNameTarget" class="text-muted" style="font-size: 0.75em; margin-right: 0.4rem; border: 1px solid var(--border-color); padding: 0.1rem 0.3rem; border-radius: 4px;">NAME</span>
                {{ row.label }}
              </td>
 
              <!-- Type -->
-             <td style="padding: 0.75rem 0;">
+             <td data-label="Type" style="padding: 0.75rem 0;">
                <span :class="row.type === 'INCOME' ? 'text-success' : 'text-danger'">{{ row.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
              </td>
 
              <!-- Limit amount -->
-             <td style="padding: 0.75rem 0;">
+             <td data-label="Limit" style="padding: 0.75rem 0;">
                RM{{ formatCurrency(row.amount) }}
                <div v-if="row.target && (row.target.start_date || row.target.end_date)" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
                  Active: {{ row.target.start_date || 'Forever' }} → {{ row.target.end_date || 'Forever' }}
@@ -69,7 +69,7 @@
              </td>
 
              <!-- Source badge -->
-             <td style="padding: 0.75rem 0;">
+             <td data-label="Source" style="padding: 0.75rem 0;">
                <span v-if="row.isDefault"
                  style="font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-weight: 600; background: rgba(255,255,255,0.07); color: var(--text-muted); border: 1px solid var(--border-color);"
                >🔁 Default</span>
@@ -79,7 +79,7 @@
              </td>
 
              <!-- Actions -->
-             <td style="padding: 0.75rem 0; text-align: right;">
+             <td data-label="Actions" style="padding: 0.75rem 0; text-align: right;">
                <div style="display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap;">
                  <template v-if="row.isDefault">
                    <button class="btn btn-primary" style="padding: 0.2rem 0.55rem; font-size: 0.75rem;" @click="openModalForCategory(row.categoryObj)">Set Custom</button>
@@ -103,7 +103,7 @@
     </div>
 
     <div v-if="activeTab === 'CATEGORIES'" class="card" style="margin-bottom: 2rem;">
-       <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+       <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
          <thead>
            <tr style="border-bottom: 1px solid var(--border-color);">
              <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Name</th>
@@ -116,11 +116,11 @@
              <td colspan="3" class="text-muted" style="text-align: center; padding: 2rem;">No categories found.</td>
            </tr>
            <tr v-for="c in paginatedCategories" :key="c.id" style="border-bottom: 1px solid var(--border-color);">
-             <td style="padding: 0.75rem 0; font-weight: 500;">{{ c.name }}</td>
-             <td style="padding: 0.75rem 0;">
+             <td data-label="Name" style="padding: 0.75rem 0; font-weight: 500;">{{ c.name }}</td>
+             <td data-label="Type" style="padding: 0.75rem 0;">
                <span :class="c.type === 'INCOME' ? 'text-success' : 'text-danger'">{{ c.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
              </td>
-             <td style="padding: 0.75rem 0; text-align: right; display: flex; justify-content: flex-end; gap: 0.5rem;">
+             <td data-label="Actions" style="padding: 0.75rem 0; text-align: right; display: flex; justify-content: flex-end; gap: 0.5rem;">
                <span v-if="c.is_default" class="text-muted" style="font-size: 0.75rem; padding: 0.2rem;">Default</span>
                <template v-else>
                  <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="openCategoryModal(c)">Edit</button>

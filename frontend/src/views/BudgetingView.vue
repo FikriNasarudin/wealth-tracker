@@ -240,7 +240,7 @@
           </div>
         </div>
         <div class="table-container">
-          <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+          <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color);">
                 <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Date</th>
@@ -254,10 +254,10 @@
                 <td colspan="4" class="text-muted" style="text-align: center; padding: 2rem;">No recent transactions.</td>
               </tr>
               <tr v-for="txn in recentTransactions" :key="txn.id" style="border-bottom: 1px solid var(--border-color);">
-                <td style="padding: 0.75rem 0;">{{ txn.date }}</td>
-                <td style="padding: 0.75rem 0; color: var(--text-muted);">{{ txn.category_name || 'Uncategorized' }}</td>
-                <td style="padding: 0.75rem 0; font-weight: 500;">{{ txn.name }}</td>
-                <td style="padding: 0.75rem 0; text-align: right;" :class="txn.type === 'INCOME' ? 'text-success' : 'text-danger'">
+                <td data-label="Date" style="padding: 0.75rem 0;">{{ txn.date }}</td>
+                <td data-label="Category" style="padding: 0.75rem 0; color: var(--text-muted);">{{ txn.category_name || 'Uncategorized' }}</td>
+                <td data-label="Name" style="padding: 0.75rem 0; font-weight: 500;">{{ txn.name }}</td>
+                <td data-label="Amount" style="padding: 0.75rem 0; text-align: right;" :class="txn.type === 'INCOME' ? 'text-success' : 'text-danger'">
                   {{ txn.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(txn.amount) }}
                 </td>
               </tr>
@@ -277,10 +277,10 @@
         <div v-if="activeUnloggedSubscriptions.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No pending recurring items this month.</div>
         <div v-else>
           <div class="table-container">
-            <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+            <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
               <tbody>
                 <tr v-for="sub in activeUnloggedSubscriptions" :key="sub.id" style="border-bottom: 1px solid var(--border-color);" :style="sub.isInactive ? 'opacity: 0.65;' : ''">
-                  <td style="padding: 0.75rem 0; font-weight: 500;">
+                  <td data-label="Item" style="padding: 0.75rem 0; font-weight: 500;">
                     <span :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'" style="margin-right: 0.5rem;">{{ sub.type === 'INCOME' ? '↑' : '↓' }}</span>
                     {{ sub.name }}
                     <span v-if="sub.isLogged" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; background: rgba(16,185,129,0.15); color: var(--success); border-radius: 4px; margin-left: 0.5rem; font-weight: 600;">
@@ -293,7 +293,7 @@
                       {{ sub.type === 'INCOME' ? 'Auto credit' : 'Auto debit' }} on {{ getOrdinalSuffix(sub.auto_log_day) }}
                     </div>
                   </td>
-                  <td style="padding: 0.75rem 0; color: var(--text-muted); text-align: right;" :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'">
+                  <td data-label="Value" style="padding: 0.75rem 0; color: var(--text-muted); text-align: right;" :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'">
                     {{ sub.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(sub.amount) }} / {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}
                   </td>
                 </tr>
@@ -324,7 +324,7 @@
         </div>
         <div v-else>
           <div class="table-container">
-            <table class="data-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+            <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color);">
                   <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Debit Account</th>
@@ -335,14 +335,14 @@
               </thead>
               <tbody>
                 <tr v-for="item in debitAccountBreakdown" :key="item.name" style="border-bottom: 1px solid var(--border-color);">
-                  <td style="padding: 0.75rem 0; font-weight: 600;">{{ item.name }}</td>
-                  <td style="padding: 0.75rem 0; text-align: right; font-weight: 500; color: var(--danger);">
+                  <td data-label="Account" style="padding: 0.75rem 0; font-weight: 600;">{{ item.name }}</td>
+                  <td data-label="Value" style="padding: 0.75rem 0; text-align: right; font-weight: 500; color: var(--danger);">
                     -RM{{ formatCurrency(item.amount) }}
                   </td>
-                  <td style="padding: 0.75rem 0; text-align: right; font-weight: 600; color: var(--accent-primary);">
+                  <td data-label="Percentage" style="padding: 0.75rem 0; text-align: right; font-weight: 600; color: var(--accent-primary);">
                     {{ item.percentage.toFixed(1) }}%
                   </td>
-                  <td style="padding: 0.75rem 0; vertical-align: middle;">
+                  <td data-label="Share" style="padding: 0.75rem 0; vertical-align: middle;">
                     <div style="width: 100%; height: 8px; background: var(--bg-background); border-radius: 4px; overflow: hidden;">
                       <div :style="{
                         width: item.percentage + '%',

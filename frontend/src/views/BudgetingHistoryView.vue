@@ -45,7 +45,7 @@
 
     <div class="card">
       <div class="table-container">
-        <table>
+        <table class="responsive-table">
           <thead>
             <tr>
               <th>Date</th>
@@ -62,17 +62,17 @@
               <td colspan="7" class="text-center text-muted" style="text-align: center;">No transactions match your filters.</td>
             </tr>
             <tr v-for="item in paginatedHistory" :key="item.id">
-              <td>{{ item.date }}</td>
-              <td>
+              <td data-label="Date">{{ item.date }}</td>
+              <td data-label="Type">
                 <span :class="item.type === 'INCOME' ? 'text-success' : 'text-danger'">
                   {{ item.type === 'INCOME' ? 'Income' : 'Expense' }}
                 </span>
               </td>
-              <td>{{ item.category_name || 'Uncategorized' }}</td>
-              <td style="font-weight: 500;">{{ item.name }}</td>
-              <td>{{ item.description || '-' }}</td>
-              <td style="font-weight: 600;">RM{{ formatCurrency(item.amount) }}</td>
-              <td>
+              <td data-label="Category">{{ item.category_name || 'Uncategorized' }}</td>
+              <td data-label="Name" style="font-weight: 500;">{{ item.name }}</td>
+              <td data-label="Desc">{{ item.description || '-' }}</td>
+              <td data-label="Amount" style="font-weight: 600;">RM{{ formatCurrency(item.amount) }}</td>
+              <td data-label="Actions">
                 <div class="action-buttons">
                   <button class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="editTransaction(item)">Edit</button>
                   <button class="btn btn-danger" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="deleteTransaction(item.id)">Delete</button>

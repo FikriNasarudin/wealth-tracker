@@ -36,7 +36,7 @@
 
     <div class="card">
       <div class="table-container">
-        <table>
+        <table class="responsive-table">
           <thead>
             <tr>
               <th>Date (MM/YYYY)</th>
@@ -52,12 +52,12 @@
               <td colspan="6" class="text-center text-muted" style="text-align: center;">No snapshots match your filters.</td>
             </tr>
             <tr v-for="item in paginatedHistory" :key="item.id">
-              <td>{{ item.month.toString().padStart(2, '0') }}/{{ item.year }}</td>
-              <td>{{ item.category_name || 'Mixed' }}</td>
-              <td>{{ item.platform_name }}</td>
-              <td>RM{{ formatCurrency(item.total_invested) }}</td>
-              <td style="font-weight: 600;">RM{{ formatCurrency(item.current_balance) }}</td>
-              <td>
+              <td data-label="Date">{{ item.month.toString().padStart(2, '0') }}/{{ item.year }}</td>
+              <td data-label="Category">{{ item.category_name || 'Mixed' }}</td>
+              <td data-label="Platform">{{ item.platform_name }}</td>
+              <td data-label="Invested">RM{{ formatCurrency(item.total_invested) }}</td>
+              <td data-label="Balance" style="font-weight: 600;">RM{{ formatCurrency(item.current_balance) }}</td>
+              <td data-label="Actions">
                 <div class="action-buttons">
                   <button class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="editSnapshot(item)">Edit</button>
                   <button class="btn btn-danger" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="deleteSnapshot(item.id)">Delete</button>

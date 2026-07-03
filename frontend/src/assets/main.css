@@ -375,11 +375,12 @@ tbody tr:hover {
   }
   
   .main-content {
-    padding: 1.5rem 1rem 5.5rem 1rem;
+    padding: 1rem 0.75rem 5.5rem 0.75rem;
   }
   
   .grid-2col, .grid-3col, .grid-4col {
     grid-template-columns: 1fr !important;
+    gap: 1rem;
   }
   
   header {
@@ -394,16 +395,107 @@ tbody tr:hover {
     width: 100%;
   }
 
+  /* Typography adjustments for mobile */
+  h1 {
+    font-size: 1.5rem !important;
+  }
+  h2 {
+    font-size: 1.25rem !important;
+  }
+  h3 {
+    font-size: 1.1rem !important;
+  }
+  .main-content p.text-muted {
+    font-size: 0.85rem;
+  }
+
+  /* Card padding reduction and layout adjustments */
+  .card {
+    padding: 1rem !important;
+  }
+  
+  /* Metric card values */
+  .card div[style*="font-size: 2rem"] {
+    font-size: 1.6rem !important;
+  }
+
   /* Improve grid columns for very small phones */
   .main-content > div[style*="grid-template-columns"] {
     grid-template-columns: 1fr !important;
   }
 
-  /* Add subtle scroll hint to tables on mobile */
+  /* Responsive Table styling - transforming to cards */
   .table-container {
+    border: none;
+  }
+
+  table.responsive-table {
+    min-width: 100% !important;
+  }
+
+  table.responsive-table, 
+  table.responsive-table thead, 
+  table.responsive-table tbody, 
+  table.responsive-table th, 
+  table.responsive-table td, 
+  table.responsive-table tr { 
+    display: block; 
+  }
+  
+  table.responsive-table thead tr { 
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+  
+  table.responsive-table tr { 
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--border-radius-md);
+    margin-bottom: 1rem;
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+  }
+  
+  table.responsive-table td { 
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
     position: relative;
+    padding-left: 45% !important; 
+    text-align: right !important;
+    padding: 0.6rem 0 !important;
+    font-size: 0.875rem;
+    min-height: 2.25rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  
+  table.responsive-table td:last-child {
+    border-bottom: 0;
+    padding-bottom: 0 !important;
+  }
+
+  table.responsive-table td:before { 
+    position: absolute;
+    left: 0;
+    width: 40%; 
+    padding-right: 10px; 
+    white-space: nowrap;
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-muted);
+    content: attr(data-label);
+    display: inline-block;
+  }
+
+  table.responsive-table td .action-buttons,
+  table.responsive-table td div[style*="display: flex"] {
+    justify-content: flex-end !important;
+    width: 100%;
   }
 }
+
 
 /* Pulse Skeleton Loader */
 @keyframes skeletonPulse {
