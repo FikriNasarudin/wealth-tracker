@@ -22,6 +22,15 @@ const getBaseURL = () => {
 }
 
 async function initApp() {
+  const backendUrl = localStorage.getItem('backend_url')
+  const isNative = !!window.Capacitor
+  
+  if (isNative && !backendUrl) {
+    app.provide('googleEnabled', false)
+    app.mount('#app')
+    return
+  }
+
   try {
     const response = await fetch(`${getBaseURL()}/auth/config/`)
     if (response.ok) {
