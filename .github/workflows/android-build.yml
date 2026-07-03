@@ -73,5 +73,6 @@ jobs:
           name: "Latest Mobile Build"
           body: "This release contains the automatically built mobile app (`AetherWealth.apk`) from the latest commit."
           allowUpdates: true
+          replacesArtifacts: true
           makeLatest: true
           token: ${{ secrets.GITHUB_TOKEN }}
