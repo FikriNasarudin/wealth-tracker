@@ -8,12 +8,13 @@
       <span>Home</span>
     </router-link>
 
-    <router-link to="/banking" class="mobile-nav-item" active-class="active">
+    <router-link to="/assets" class="mobile-nav-item" active-class="active">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="5" width="20" height="14" rx="2"/>
-        <line x1="2" y1="10" x2="22" y2="10"/>
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
       </svg>
-      <span>Banking</span>
+      <span>Assets</span>
     </router-link>
 
     <router-link to="/budgeting" class="mobile-nav-item" active-class="active">
@@ -24,11 +25,12 @@
       <span>Budget</span>
     </router-link>
 
-    <router-link to="/goals" class="mobile-nav-item" active-class="active">
+    <router-link to="/liabilities" class="mobile-nav-item" active-class="active">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+        <polyline points="17 18 23 18 23 12"/>
       </svg>
-      <span>Goals</span>
+      <span>Liabilities</span>
     </router-link>
 
     <button class="mobile-nav-item more-button" @click="$emit('open-menu')">

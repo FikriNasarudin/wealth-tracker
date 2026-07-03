@@ -1,7 +1,10 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
+import { Capacitor } from '@capacitor/core'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: Capacitor.isNativePlatform() 
+    ? createWebHashHistory(import.meta.env.BASE_URL) 
+    : createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/login',
@@ -108,7 +111,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('access_token')
   const backendUrl = localStorage.getItem('backend_url')
-  const isNative = !!window.Capacitor
+  const isNative = Capacitor.isNativePlatform()
   
   if (isNative && !backendUrl && to.name !== 'server-settings') {
     next('/server-settings')

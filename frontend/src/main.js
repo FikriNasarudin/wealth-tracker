@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './assets/main.css'
+import { Capacitor } from '@capacitor/core'
 
 import vue3GoogleLogin from 'vue3-google-login'
 
@@ -23,7 +24,7 @@ const getBaseURL = () => {
 
 async function initApp() {
   const backendUrl = localStorage.getItem('backend_url')
-  const isNative = !!window.Capacitor
+  const isNative = Capacitor.isNativePlatform()
   
   if (isNative && !backendUrl) {
     app.provide('googleEnabled', false)
