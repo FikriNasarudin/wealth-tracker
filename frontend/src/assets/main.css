@@ -82,6 +82,7 @@ a:hover {
   margin-left: var(--sidebar-width);
   display: flex;
   justify-content: center;
+  min-width: 0;
 }
 
 .main-content {
@@ -100,6 +101,8 @@ a:hover {
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  max-width: 100%;
+  min-width: 0;
 }
 
 .card:hover {
@@ -197,13 +200,23 @@ input[type=number] {
 
 /* Tables */
 .table-container {
+  width: 100%;
   overflow-x: auto;
   border-radius: var(--border-radius-md);
   border: 1px solid var(--border-color);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Horizontal scrollable wrapper helper */
+.scrollable-x {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
   width: 100%;
+  min-width: 600px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -365,6 +378,10 @@ tbody tr:hover {
     padding: 5rem 1rem 1rem 1rem;
   }
   
+  .grid-2col, .grid-3col, .grid-4col {
+    grid-template-columns: 1fr !important;
+  }
+  
   header {
     flex-direction: column !important;
     align-items: flex-start !important;
@@ -385,16 +402,6 @@ tbody tr:hover {
   /* Add subtle scroll hint to tables on mobile */
   .table-container {
     position: relative;
-  }
-  .table-container::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 20px;
-    background: linear-gradient(to right, transparent, var(--bg-primary));
-    pointer-events: none;
   }
 }
 

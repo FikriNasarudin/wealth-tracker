@@ -311,16 +311,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
             else:
                 txn_sum = Decimal('0.00')
                 
-            sub_sum = Decimal('0.00')
-            for s in subs:
-                if s.type == t.type:
-                    monthly_amt = s.amount if s.billing_cycle == 'MONTHLY' else s.amount / Decimal('12.0')
-                    if t.category_id and s.category_id == t.category_id:
-                        sub_sum += monthly_amt
-                    elif t.name and s.name.lower() == t.name.lower():
-                        sub_sum += monthly_amt
-                        
-            total_amt = txn_sum + sub_sum
+            total_amt = txn_sum
             cname = t.category.name if t.category else t.name
             
             entry = {
@@ -362,7 +353,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
         for cat_id, info in default_expense_cats.items():
             txn_sum = qs.filter(type='EXPENSE', category_id=cat_id).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-            total_amt = txn_sum + info['total']
+            total_amt = txn_sum
             expense_breakdown.append({
                 'category_id': cat_id,
                 'category': info['name'],
@@ -374,7 +365,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
         for cat_id, info in default_income_cats.items():
             txn_sum = qs.filter(type='INCOME', category_id=cat_id).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-            total_amt = txn_sum + info['total']
+            total_amt = txn_sum
             income_breakdown.append({
                 'category_id': cat_id,
                 'category': info['name'],

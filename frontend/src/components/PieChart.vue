@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
 import { Pie } from 'vue-chartjs'
 
@@ -24,6 +24,20 @@ const props = defineProps({
     type: Array,
     required: false
   }
+})
+
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
 })
 
 // Use a vibrant color palette that matches the dark glassmorphism theme
@@ -62,7 +76,7 @@ const chartOptions = computed(() => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'right',
+        position: isMobile.value ? 'bottom' : 'right',
         title: {
           display: true,
           text: `Total: ${formattedTotal}`,

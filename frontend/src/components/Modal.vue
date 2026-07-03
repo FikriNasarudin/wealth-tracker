@@ -58,6 +58,7 @@ const close = () => {
   border-radius: var(--border-radius-md);
   width: 90%;
   max-width: 500px;
+  max-height: 90vh;
   box-shadow: var(--shadow-lg), 0 0 30px rgba(16, 185, 129, 0.05);
   display: flex;
   flex-direction: column;
@@ -92,6 +93,8 @@ const close = () => {
 
 .modal-body {
   padding: 1.5rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Modal Transition */
