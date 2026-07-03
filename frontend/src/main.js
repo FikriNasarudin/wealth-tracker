@@ -11,9 +11,19 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 
+const getBackendUrl = () => {
+  const savedUrl = localStorage.getItem('backend_url')
+  return savedUrl ? savedUrl.trim().replace(/\/$/, '') : ''
+}
+
+const getBaseURL = () => {
+  const backend = getBackendUrl()
+  return backend ? `${backend}/api` : '/api'
+}
+
 async function initApp() {
   try {
-    const response = await fetch('/api/auth/config/')
+    const response = await fetch(`${getBaseURL()}/auth/config/`)
     if (response.ok) {
       const data = await response.json()
       if (data.google_client_id) {

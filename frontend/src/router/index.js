@@ -96,13 +96,23 @@ const router = createRouter({
       name: 'goals',
       component: () => import('../views/GoalsView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/server-settings',
+      name: 'server-settings',
+      component: () => import('../views/ServerSettingsView.vue')
     }
   ]
 })
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('access_token')
-  if (to.meta.requiresAuth && !token) {
+  const backendUrl = localStorage.getItem('backend_url')
+  const isNative = !!window.Capacitor
+  
+  if (isNative && !backendUrl && to.name !== 'server-settings') {
+    next('/server-settings')
+  } else if (to.meta.requiresAuth && !token) {
     next('/login')
   } else if (to.name === 'login' && token) {
     next('/')

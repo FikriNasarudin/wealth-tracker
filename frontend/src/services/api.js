@@ -1,8 +1,18 @@
 import axios from 'axios'
 import router from '../router'
 
+const getBackendUrl = () => {
+  const savedUrl = localStorage.getItem('backend_url')
+  return savedUrl ? savedUrl.trim().replace(/\/$/, '') : ''
+}
+
+const getBaseURL = () => {
+  const backend = getBackendUrl()
+  return backend ? `${backend}/api` : '/api'
+}
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json'
   }
@@ -61,7 +71,7 @@ api.interceptors.response.use(
       if (refreshToken) {
         try {
           // Use axios directly to avoid interceptors on the refresh call
-          const { data } = await axios.post('/api/auth/login/refresh/', {
+          const { data } = await axios.post(`${getBaseURL()}/auth/login/refresh/`, {
             refresh: refreshToken
           })
           
