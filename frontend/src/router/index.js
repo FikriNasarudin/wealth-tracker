@@ -101,6 +101,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/calculator',
+      name: 'calculator',
+      component: () => import('../views/CalculatorView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/server-settings',
       name: 'server-settings',
       component: () => import('../views/ServerSettingsView.vue')

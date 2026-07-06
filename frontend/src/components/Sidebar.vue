@@ -36,6 +36,12 @@
         <span>Financial Goals</span>
       </router-link>
 
+      <!-- Calculators Link -->
+      <router-link to="/calculator" class="nav-item" style="display: flex; align-items: center; gap: 0.75rem;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="8" y1="10" x2="8" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="8" y1="18" x2="8" y2="18"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+        <span>Calculators</span>
+      </router-link>
+
       <!-- Budgeting Menu -->
       <div class="menu-group">
         <button class="nav-item menu-toggle" @click="toggleMenu('budgeting')" :class="{ active: openMenus.budgeting || isActivePrefix('/budgeting') }" style="display: flex; align-items: center; gap: 0.75rem; justify-content: flex-start;">
@@ -274,7 +280,7 @@ button.nav-item.router-link-active {
 .submenu-item.active {
   color: var(--accent-primary);
   font-weight: 600;
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(16, 185, 129, 0.08);
 }
 
 .sidebar-footer {

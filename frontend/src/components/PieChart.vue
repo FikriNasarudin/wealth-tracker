@@ -59,7 +59,7 @@ const chartData = computed(() => {
     datasets: [
       {
         backgroundColor: bgColors,
-        borderColor: '#1A233A', // Match card background to create a gap effect
+        borderColor: '#080b11', // Match obsidian body background for premium gap cutout effect
         borderWidth: 2,
         data: props.data
       }

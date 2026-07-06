@@ -239,30 +239,32 @@
             <button id="tour-add-txn" class="btn btn-primary" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;" @click="showModal = true">+ Add Transaction</button>
           </div>
         </div>
-        <div class="table-container">
-          <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-color);">
-                <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Date</th>
-                <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Category</th>
-                <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Name</th>
-                <th style="padding: 0.75rem 0; text-align: right; color: var(--text-muted); font-weight: 500;">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="recentTransactions.length === 0">
-                <td colspan="4" class="text-muted" style="text-align: center; padding: 2rem;">No recent transactions.</td>
-              </tr>
-              <tr v-for="txn in recentTransactions" :key="txn.id" style="border-bottom: 1px solid var(--border-color);">
-                <td data-label="Date" style="padding: 0.75rem 0;">{{ txn.date }}</td>
-                <td data-label="Category" style="padding: 0.75rem 0; color: var(--text-muted);">{{ txn.category_name || 'Uncategorized' }}</td>
-                <td data-label="Name" style="padding: 0.75rem 0; font-weight: 500;">{{ txn.name }}</td>
-                <td data-label="Amount" style="padding: 0.75rem 0; text-align: right;" :class="txn.type === 'INCOME' ? 'text-success' : 'text-danger'">
-                  {{ txn.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(txn.amount) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="transaction-list-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <div v-if="recentTransactions.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No recent transactions.</div>
+          <div v-else v-for="txn in recentTransactions" :key="txn.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); transition: background var(--transition-fast);">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div :style="{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: txn.type === 'INCOME' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                color: txn.type === 'INCOME' ? 'var(--success)' : 'var(--danger)',
+                fontWeight: '600'
+              }">
+                {{ txn.type === 'INCOME' ? '↑' : '↓' }}
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">{{ txn.name }}</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">{{ txn.category_name || 'Uncategorized' }} • {{ txn.date }}</span>
+              </div>
+            </div>
+            <div :class="txn.type === 'INCOME' ? 'text-success' : 'text-danger'" style="font-weight: 700; font-size: 1rem;">
+              {{ txn.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(txn.amount) }}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -276,30 +278,47 @@
         </div>
         <div v-if="activeUnloggedSubscriptions.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No pending recurring items this month.</div>
         <div v-else>
-          <div class="table-container">
-            <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
-              <tbody>
-                <tr v-for="sub in activeUnloggedSubscriptions" :key="sub.id" style="border-bottom: 1px solid var(--border-color);" :style="sub.isInactive ? 'opacity: 0.65;' : ''">
-                  <td data-label="Item" style="padding: 0.75rem 0; font-weight: 500;">
-                    <span :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'" style="margin-right: 0.5rem;">{{ sub.type === 'INCOME' ? '↑' : '↓' }}</span>
-                    {{ sub.name }}
-                    <span v-if="sub.isLogged" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; background: rgba(16,185,129,0.15); color: var(--success); border-radius: 4px; margin-left: 0.5rem; font-weight: 600;">
-                      ✓ {{ sub.type === 'INCOME' ? 'Received' : 'Paid' }}
-                    </span>
-                    <span v-else-if="sub.isInactive" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; background: var(--bg-background); color: var(--text-muted); border-radius: 4px; margin-left: 0.5rem; font-weight: 500;">
-                      Passed
-                    </span>
-                    <div v-if="sub.auto_log_day" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem;">
-                      {{ sub.type === 'INCOME' ? 'Auto credit' : 'Auto debit' }} on {{ getOrdinalSuffix(sub.auto_log_day) }}
-                    </div>
-                  </td>
-                  <td data-label="Value" style="padding: 0.75rem 0; color: var(--text-muted); text-align: right;" :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'">
-                    {{ sub.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(sub.amount) }} / {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="subscription-list-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <div v-if="activeUnloggedSubscriptions.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No pending recurring items this month.</div>
+          <div v-else v-for="sub in activeUnloggedSubscriptions" :key="sub.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); transition: background var(--transition-fast);" :style="sub.isInactive ? 'opacity: 0.5;' : ''">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div :style="{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: sub.type === 'INCOME' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                color: sub.type === 'INCOME' ? 'var(--success)' : 'var(--danger)',
+                fontWeight: '600'
+              }">
+                {{ sub.type === 'INCOME' ? '↑' : '↓' }}
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">
+                  {{ sub.name }}
+                  <span v-if="sub.isLogged" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; background: rgba(16,185,129,0.12); color: var(--success); border-radius: 4px; margin-left: 0.5rem; font-weight: 600;">
+                    ✓ {{ sub.type === 'INCOME' ? 'Received' : 'Paid' }}
+                  </span>
+                  <span v-else-if="sub.isInactive" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; background: var(--border-color); color: var(--text-muted); border-radius: 4px; margin-left: 0.5rem; font-weight: 500;">
+                    Passed
+                  </span>
+                </span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">
+                  <template v-if="sub.auto_log_day">
+                    {{ sub.type === 'INCOME' ? 'Auto credit' : 'Auto debit' }} on {{ getOrdinalSuffix(sub.auto_log_day) }}
+                  </template>
+                  <template v-else>Manual</template>
+                </span>
+              </div>
+            </div>
+            <div :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'" style="font-weight: 700; font-size: 1.05rem; text-align: right;">
+              <div>{{ sub.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(sub.amount) }}</div>
+              <div style="font-size: 0.7rem; font-weight: 500; color: var(--text-muted); margin-top: 0.15rem;">/ {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}</div>
+            </div>
           </div>
+        </div>
           
           <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; font-weight: 600;">
             <span>Monthly Equivalent:</span>
@@ -323,38 +342,27 @@
           No recurring expenses configured with debit accounts.
         </div>
         <div v-else>
-          <div class="table-container">
-            <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color);">
-                  <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Debit Account</th>
-                  <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500; text-align: right;">Monthly Value</th>
-                  <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500; text-align: right; width: 120px;">Percentage</th>
-                  <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500; width: 200px;">Share</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in debitAccountBreakdown" :key="item.name" style="border-bottom: 1px solid var(--border-color);">
-                  <td data-label="Account" style="padding: 0.75rem 0; font-weight: 600;">{{ item.name }}</td>
-                  <td data-label="Value" style="padding: 0.75rem 0; text-align: right; font-weight: 500; color: var(--danger);">
-                    -RM{{ formatCurrency(item.amount) }}
-                  </td>
-                  <td data-label="Percentage" style="padding: 0.75rem 0; text-align: right; font-weight: 600; color: var(--accent-primary);">
-                    {{ item.percentage.toFixed(1) }}%
-                  </td>
-                  <td data-label="Share" style="padding: 0.75rem 0; vertical-align: middle;">
-                    <div style="width: 100%; height: 8px; background: var(--bg-background); border-radius: 4px; overflow: hidden;">
-                      <div :style="{
-                        width: item.percentage + '%',
-                        height: '100%',
-                        background: 'var(--accent-primary)'
-                      }"></div>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        <div class="debit-breakdown-list" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div v-if="debitAccountBreakdown.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">
+            No recurring expenses configured with debit accounts.
           </div>
+          <div v-else v-for="item in debitAccountBreakdown" :key="item.name" style="display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">{{ item.name }}</span>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">-RM{{ formatCurrency(item.amount) }}</span>
+                <span style="font-size: 0.85rem; font-weight: 700; color: var(--accent-primary);">{{ item.percentage.toFixed(1) }}%</span>
+              </div>
+            </div>
+            <div style="width: 100%; height: 6px; background: var(--bg-primary); border-radius: 3px; overflow: hidden;">
+              <div :style="{
+                width: item.percentage + '%',
+                height: '100%',
+                background: 'var(--accent-primary)'
+              }"></div>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </div>

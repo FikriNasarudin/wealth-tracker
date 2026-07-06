@@ -23,24 +23,25 @@
     </header>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-      <div class="card">
+      <div class="card card-indigo">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Original Loan Amount</div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
           <div class="skeleton skeleton-text" style="width: 50%;"></div>
         </template>
         <template v-else>
-          <div style="font-size: 2rem; font-weight: 700;">RM{{ formatCurrency(totalOriginal) }}</div>
-          <div v-if="originalChange !== null" :class="originalChange > 0 ? 'text-danger' : (originalChange < 0 ? 'text-success' : 'text-muted')" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-            <svg v-if="originalChange > 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-            <svg v-else-if="originalChange < 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
-            <span v-else style="margin-right: 0.25rem;">-</span>
-            {{ Math.abs(originalChange).toFixed(2) }}% vs last month
+          <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(totalOriginal) }}</div>
+          <div v-if="originalChange !== null" :class="originalChange > 0 ? 'text-danger' : (originalChange < 0 ? 'text-success' : 'text-muted')" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+            <svg v-if="originalChange > 0" style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <svg v-else-if="originalChange < 0" style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+            <span>
+              {{ Math.abs(originalChange).toFixed(2) }}% vs last month
+            </span>
           </div>
         </template>
       </div>
 
-      <div id="tour-remaining-principal" class="card">
+      <div id="tour-remaining-principal" class="card card-royal">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           Remaining Principal
           <Tooltip title="Remaining Principal" description="The total amount of debt you still owe to your lenders, not including future interest." example="RM100,000 borrowed - RM20,000 paid = RM80,000 Remaining" />
@@ -51,16 +52,17 @@
         </template>
         <template v-else>
           <div style="font-size: 2rem; font-weight: 700; color: var(--danger);">RM{{ formatCurrency(totalRemaining) }}</div>
-          <div v-if="remainingChange !== null" :class="remainingChange > 0 ? 'text-danger' : (remainingChange < 0 ? 'text-success' : 'text-muted')" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-            <svg v-if="remainingChange > 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-            <svg v-else-if="remainingChange < 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
-            <span v-else style="margin-right: 0.25rem;">-</span>
-            {{ Math.abs(remainingChange).toFixed(2) }}% vs last month
+          <div v-if="remainingChange !== null" :class="remainingChange > 0 ? 'text-danger' : (remainingChange < 0 ? 'text-success' : 'text-muted')" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+            <svg v-if="remainingChange > 0" style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <svg v-else-if="remainingChange < 0" style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+            <span>
+              {{ Math.abs(remainingChange).toFixed(2) }}% vs last month
+            </span>
           </div>
         </template>
       </div>
 
-      <div id="tour-debt-reduced" class="card">
+      <div id="tour-debt-reduced" class="card card-emerald">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           Total Debt Reduced
           <Tooltip title="Total Debt Reduced" description="The absolute amount of principal debt you have successfully paid off." example="RM100,000 Original - RM80,000 Remaining = RM20,000 Reduced" />
@@ -71,10 +73,12 @@
         </template>
         <template v-else>
           <div style="font-size: 2rem; font-weight: 700; color: var(--success);">RM{{ formatCurrency(totalReduced) }}</div>
-          <div v-if="reducedChange !== null" :class="reducedChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-            <svg v-if="reducedChange >= 0" style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-            <svg v-else style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
-            {{ Math.abs(reducedChange).toFixed(2) }}% vs last month
+          <div v-if="reducedChange !== null" :class="reducedChange >= 0 ? 'text-success' : 'text-danger'" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+            <svg v-if="reducedChange >= 0" style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+            <svg v-else style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
+            <span>
+              {{ Math.abs(reducedChange).toFixed(2) }}% vs last month
+            </span>
           </div>
         </template>
       </div>
@@ -292,6 +296,10 @@ const dtiRatio = computed(() => {
 const originalChange = computed(() => calculateChange(totalOriginal.value, prevTotalOriginal.value))
 const remainingChange = computed(() => calculateChange(totalRemaining.value, prevTotalRemaining.value))
 const reducedChange = computed(() => calculateChange(totalReduced.value, prevTotalReduced.value))
+
+const originalDiff = computed(() => totalOriginal.value - prevTotalOriginal.value)
+const remainingDiff = computed(() => totalRemaining.value - prevTotalRemaining.value)
+const reducedDiff = computed(() => totalReduced.value - prevTotalReduced.value)
 
 import SearchableSelect from '@/components/SearchableSelect.vue'
 

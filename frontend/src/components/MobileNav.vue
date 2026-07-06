@@ -55,8 +55,8 @@ defineEmits(['open-menu'])
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 64px;
-  background: rgba(12, 16, 27, 0.85);
+  height: 66px;
+  background: rgba(15, 19, 30, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-color);

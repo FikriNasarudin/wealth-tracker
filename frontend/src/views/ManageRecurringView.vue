@@ -23,59 +23,67 @@
          <button class="btn" :class="statusTab === 'ARCHIVED' ? 'btn-primary' : 'btn-secondary'" style="padding: 0.5rem 1rem;" @click="statusTab = 'ARCHIVED'">Archived</button>
        </div>
 
-       <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
-         <thead>
-           <tr style="border-bottom: 1px solid var(--border-color);">
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Name</th>
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Category</th>
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Type</th>
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Amount</th>
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Status for {{ currentMonthStr }}</th>
-             <th style="padding: 0.75rem 0; text-align: right; color: var(--text-muted); font-weight: 500;">Actions</th>
-           </tr>
-         </thead>
-         <tbody>
-            <tr v-if="filteredSubs.length === 0">
-              <td colspan="6" style="text-align: center; padding: 3rem 2rem;">
-                <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔁</div>
-                <div style="font-weight: 600; margin-bottom: 0.4rem;">No recurring items yet</div>
-                <div class="text-muted" style="font-size: 0.875rem; max-width: 380px; margin: 0 auto;">Track subscriptions, loan payments, utilities, and other recurring expenses or income. You'll be reminded to log them each month in the Budgeting section.</div>
-              </td>
-            </tr>
-           <tr v-for="sub in paginatedSubs" :key="sub.id" style="border-bottom: 1px solid var(--border-color);">
-             <td data-label="Name" style="padding: 0.75rem 0; font-weight: 500;">{{ sub.name }}</td>
-             <td data-label="Category" style="padding: 0.75rem 0; color: var(--text-muted);">{{ sub.category_name || '-' }}</td>
-             <td data-label="Type" style="padding: 0.75rem 0;">
-               <span :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'">{{ sub.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
-             </td>
-             <td data-label="Amount" style="padding: 0.75rem 0;">
-               RM{{ formatCurrency(sub.amount) }} <span class="text-muted">/ {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}</span>
-               <div v-if="sub.start_date || sub.end_date" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
-                 Active: {{ sub.start_date || 'Forever' }} to {{ sub.end_date || 'Forever' }}
-               </div>
-             </td>
-             <td data-label="Status" style="padding: 0.75rem 0;">
-               <span v-if="sub.status === 'ARCHIVED'" class="text-muted">Archived</span>
-               <span v-else-if="loggedIds.includes(sub.id)" class="text-success" style="font-weight: 500;">✓ Logged</span>
-               <span v-else-if="sub.paused_months && sub.paused_months.includes(currentMonthKey)" class="text-warning">⏸ Paused</span>
-               <span v-else class="text-muted">Pending</span>
-             </td>
-             <td data-label="Actions" style="padding: 0.75rem 0; text-align: right; display: flex; justify-content: flex-end; gap: 0.5rem;">
-               <button v-if="sub.status === 'ACTIVE' && !loggedIds.includes(sub.id) && !(sub.paused_months && sub.paused_months.includes(currentMonthKey))" class="btn btn-primary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="logMonth(sub.id)">Log {{ currentMonthStr }}</button>
-               <button v-if="sub.status === 'ACTIVE' && !loggedIds.includes(sub.id) && !(sub.paused_months && sub.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="pauseMonth(sub.id)">Pause</button>
-               <button v-if="sub.status === 'ACTIVE' && !loggedIds.includes(sub.id) && (sub.paused_months && sub.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="resumeMonth(sub.id)">Resume</button>
+       <div class="recurring-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+         <div v-if="filteredSubs.length === 0" style="text-align: center; padding: 3rem 2rem;">
+           <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔁</div>
+           <div style="font-weight: 600; margin-bottom: 0.4rem;">No recurring items yet</div>
+           <div class="text-muted" style="font-size: 0.875rem; max-width: 380px; margin: 0 auto;">Track subscriptions, loan payments, utilities, and other recurring expenses or income. You'll be reminded to log them each month in the Budgeting section.</div>
+         </div>
+         <div v-else v-for="sub in paginatedSubs" :key="sub.id" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); transition: background var(--transition-fast);">
+           <div style="display: flex; align-items: center; gap: 0.75rem;">
+             <div :style="{
+               width: '32px',
+               height: '32px',
+               borderRadius: '50%',
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center',
+               background: sub.type === 'INCOME' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+               color: sub.type === 'INCOME' ? 'var(--success)' : 'var(--danger)',
+               fontWeight: '600'
+             }">
+               {{ sub.type === 'INCOME' ? '↑' : '↓' }}
+             </div>
+             <div style="display: flex; flex-direction: column;">
+               <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">
+                 {{ sub.name }}
+                 <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-left: 0.5rem;">
+                   ({{ sub.category_name || 'Uncategorized' }})
+                 </span>
+               </span>
+               <span style="font-size: 0.75rem; color: var(--text-muted);">
+                 Amount: <strong :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'">RM{{ formatCurrency(sub.amount) }}</strong> / {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}
+                 <template v-if="sub.start_date || sub.end_date">
+                   • Active: {{ sub.start_date || 'Forever' }} to {{ sub.end_date || 'Forever' }}
+                 </template>
+               </span>
+             </div>
+           </div>
+           
+           <div style="display: flex; align-items: center; gap: 1rem;">
+             <!-- Status Badge -->
+             <span v-if="sub.status === 'ARCHIVED'" style="font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-weight: 600; background: rgba(255,255,255,0.07); color: var(--text-muted); border: 1px solid var(--border-color);">Archived</span>
+             <span v-else-if="loggedIds.includes(sub.id)" style="font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-weight: 600; background: rgba(16,185,129,0.15); color: var(--success); border: 1px solid rgba(16,185,129,0.3);">✓ Logged</span>
+             <span v-else-if="sub.paused_months && sub.paused_months.includes(currentMonthKey)" style="font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-weight: 600; background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.3);">⏸ Paused</span>
+             <span v-else style="font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-weight: 600; background: rgba(255,255,255,0.07); color: var(--text-muted); border: 1px solid var(--border-color);">Pending</span>
+             
+             <!-- Actions -->
+             <div style="display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap;">
+               <button v-if="sub.status === 'ACTIVE' && !loggedIds.includes(sub.id) && !(sub.paused_months && sub.paused_months.includes(currentMonthKey))" class="btn btn-primary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="logMonth(sub.id)">Log {{ currentMonthStr }}</button>
+               <button v-if="sub.status === 'ACTIVE' && !loggedIds.includes(sub.id) && !(sub.paused_months && sub.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="pauseMonth(sub.id)">Pause</button>
+               <button v-if="sub.status === 'ACTIVE' && !loggedIds.includes(sub.id) && (sub.paused_months && sub.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="resumeMonth(sub.id)">Resume</button>
                
-               <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="openModal(sub)">Edit</button>
+               <button class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="openModal(sub)">Edit</button>
                
-               <button v-if="sub.status === 'ACTIVE'" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; color: var(--warning);" @click="archiveSub(sub.id)">Archive</button>
-               <button v-if="sub.status === 'ARCHIVED'" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; color: var(--success);" @click="unarchiveSub(sub.id)">Unarchive</button>
+               <button v-if="sub.status === 'ACTIVE'" class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem; color: var(--warning);" @click="archiveSub(sub.id)">Archive</button>
+               <button v-if="sub.status === 'ARCHIVED'" class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem; color: var(--success);" @click="unarchiveSub(sub.id)">Unarchive</button>
                
-               <button class="btn btn-danger" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="deleteSub(sub.id)">Delete</button>
-             </td>
-           </tr>
-         </tbody>
-       </table>
-       <Pagination v-model="currentPage" :totalItems="filteredSubs.length" :itemsPerPage="itemsPerPage" />
+               <button class="btn btn-danger" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="deleteSub(sub.id)">Delete</button>
+             </div>
+           </div>
+         </div>
+         <Pagination v-model="currentPage" :totalItems="filteredSubs.length" :itemsPerPage="itemsPerPage" />
+       </div>
     </div>
 
     <Modal :show="showModal" :title="form.id ? 'Edit Item' : 'Add Item'" @close="showModal = false">

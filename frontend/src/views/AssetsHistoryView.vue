@@ -35,39 +35,43 @@
     </div>
 
     <div class="card">
-      <div class="table-container">
-        <table class="responsive-table">
-          <thead>
-            <tr>
-              <th>Date (MM/YYYY)</th>
-              <th>Category</th>
-              <th>Platform</th>
-              <th>Invested</th>
-              <th>Balance</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="filteredHistory.length === 0">
-              <td colspan="6" class="text-center text-muted" style="text-align: center;">No snapshots match your filters.</td>
-            </tr>
-            <tr v-for="item in paginatedHistory" :key="item.id">
-              <td data-label="Date">{{ item.month.toString().padStart(2, '0') }}/{{ item.year }}</td>
-              <td data-label="Category">{{ item.category_name || 'Mixed' }}</td>
-              <td data-label="Platform">{{ item.platform_name }}</td>
-              <td data-label="Invested">RM{{ formatCurrency(item.total_invested) }}</td>
-              <td data-label="Balance" style="font-weight: 600;">RM{{ formatCurrency(item.current_balance) }}</td>
-              <td data-label="Actions">
-                <div class="action-buttons">
-                  <button class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="editSnapshot(item)">Edit</button>
-                  <button class="btn btn-danger" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="deleteSnapshot(item.id)">Delete</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="snapshots-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <div v-if="filteredHistory.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No snapshots match your filters.</div>
+        <div v-else v-for="item in paginatedHistory" :key="item.id" class="snapshot-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); transition: all var(--transition-fast);">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div :style="{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(16, 185, 129, 0.1)',
+              color: 'var(--success)',
+              fontWeight: '600'
+            }">
+              💰
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">
+                {{ item.platform_name }}
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-left: 0.5rem;">
+                  ({{ item.category_name || 'Mixed' }})
+                </span>
+              </span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">
+                Balance: <strong style="color: var(--text-primary);">RM{{ formatCurrency(item.current_balance) }}</strong> (Invested: RM{{ formatCurrency(item.total_invested) }}) • {{ item.month.toString().padStart(2, '0') }}/{{ item.year }}
+              </span>
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 0.4rem;">
+            <button class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="editSnapshot(item)">Edit</button>
+            <button class="btn btn-danger" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="deleteSnapshot(item.id)">Delete</button>
+          </div>
+        </div>
+        <Pagination v-model="currentPage" :totalItems="filteredHistory.length" :itemsPerPage="itemsPerPage" />
       </div>
-      <Pagination v-model="currentPage" :totalItems="filteredHistory.length" :itemsPerPage="itemsPerPage" />
     </div>
 
     <!-- Modal -->
@@ -158,10 +162,13 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import SearchableSelect from '@/components/SearchableSelect.vue'
 import Pagination from '@/components/Pagination.vue'
+
+const route = useRoute()
 
 const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const yearsList = computed(() => {
@@ -482,5 +489,22 @@ const submitSnapshot = async () => {
 onMounted(() => {
   fetchHistory()
   fetchOptions()
+  if (route.query.add === 'true') {
+    openModal()
+  }
+})
+
+watch(() => route.query.add, (newVal) => {
+  if (newVal === 'true') {
+    openModal()
+  }
 })
 </script>
+
+<style scoped>
+.snapshot-item:hover {
+  background: rgba(255, 255, 255, 0.035) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+  transform: translateX(4px);
+}
+</style>

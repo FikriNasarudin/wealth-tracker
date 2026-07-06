@@ -1,7 +1,10 @@
 <template>
   <div class="main-content">
     <header class="flex-responsive" style="margin-bottom: 2rem; gap: 1rem; position: relative; z-index: 50;">
-      <h1 style="font-weight: 600;">Dashboard</h1>
+      <div>
+        <h1 style="font-weight: 700; letter-spacing: -0.5px;">Dashboard Overview</h1>
+        <p class="text-muted">Monitor your net worth progress, cash runway, assets, and liabilities snapshots.</p>
+      </div>
       <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
         <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
           <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -63,83 +66,142 @@
       </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
       <!-- Total Assets Card -->
-      <div id="tour-liquid" class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
-          Liquid Assets
-          <Tooltip title="Liquid Assets" description="Money in bank accounts or cash that you can spend immediately." example="Savings account, physical cash" />
+      <div id="tour-liquid" class="card card-emerald">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+          <span class="text-muted" style="font-weight: 500; display: flex; align-items: center; gap: 0.25rem;">
+            Liquid Assets
+            <Tooltip title="Liquid Assets" description="Money in bank accounts or cash that you can spend immediately." example="Savings account, physical cash" />
+          </span>
+          <span v-if="!loading" style="background: rgba(16, 185, 129, 0.12); color: var(--success); padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem; border: 1px solid rgba(16, 185, 129, 0.2);">
+            Runway: {{ emergencyRunway === null ? 'N/A' : (emergencyRunway >= 999 ? '999+' : emergencyRunway.toFixed(1)) }} Mos
+          </span>
         </div>
         <template v-if="loading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
           <div class="skeleton skeleton-text" style="width: 50%;"></div>
         </template>
         <template v-else>
-          <div style="font-size: 2rem; font-weight: 700; color: var(--accent-primary);">RM{{ formatCurrency(totalLiquidAssets) }}</div>
-          <div class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-            <svg style="width: 16px; height: 16px; margin-right: 0.25rem; color: var(--accent-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            Runway: 
-            <strong style="margin-left: 0.25rem;">
-              {{ emergencyRunway === null ? 'N/A' : (emergencyRunway >= 999 ? '999+' : emergencyRunway.toFixed(1)) }} Months
-            </strong>
+          <div style="font-size: 2rem; font-weight: 700; color: var(--accent-primary); letter-spacing: -0.5px; margin: 0.25rem 0;">RM{{ formatCurrency(totalLiquidAssets) }}</div>
+          <div class="text-muted" style="font-size: 0.8rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+            <svg style="width: 14px; height: 14px; color: var(--accent-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            Cash Runway and Liquid Capital
           </div>
         </template>
       </div>
 
-      <div id="tour-invested" class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
-          Invested Assets
-          <Tooltip title="Invested Assets" description="The current value of your investments like stocks, bonds, or real estate." example="Stock portfolio, mutual funds" />
+      <div id="tour-invested" class="card card-indigo">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+          <span class="text-muted" style="font-weight: 500; display: flex; align-items: center; gap: 0.25rem;">
+            Invested Assets
+            <Tooltip title="Invested Assets" description="The current value of your investments like stocks, bonds, or real estate." example="Stock portfolio, mutual funds" />
+          </span>
+          <span v-if="!loading" style="background: rgba(99, 102, 241, 0.12); color: var(--accent-secondary); padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem; border: 1px solid rgba(99, 102, 241, 0.2);">
+            {{ profitPercentage >= 0 ? '+' : '' }}{{ profitPercentage }}% ROI
+          </span>
         </div>
         <template v-if="loading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
           <div class="skeleton skeleton-text" style="width: 45%;"></div>
         </template>
         <template v-else>
-          <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(totalAssets) }}</div>
-          <div class="text-success" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-            <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; margin: 0.25rem 0;">RM{{ formatCurrency(totalAssets) }}</div>
+          <div class="text-success" style="font-size: 0.8rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+            <svg style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
-            +{{ profitPercentage }}% Profit
+            Brokers, Crypto, and Holdings
           </div>
         </template>
       </div>
 
       <!-- Total Liabilities Card -->
-      <div id="tour-liabilities" class="card">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
-          Total Liabilities
-          <Tooltip title="Total Liabilities" description="The total amount of debt you currently owe across all loans and credit cards." example="Car loan, mortgage" />
+      <div id="tour-liabilities" class="card card-royal">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+          <span class="text-muted" style="font-weight: 500; display: flex; align-items: center; gap: 0.25rem;">
+            Total Liabilities
+            <Tooltip title="Total Liabilities" description="The total amount of debt you currently owe across all loans and credit cards." example="Car loan, mortgage" />
+          </span>
+          <span v-if="!loading && liabilitiesChange" :style="{
+            background: liabilitiesChange.isPositive ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+            color: liabilitiesChange.isPositive ? 'var(--danger)' : 'var(--success)',
+            border: liabilitiesChange.isPositive ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)'
+          }" style="padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">
+            {{ liabilitiesChange.isPositive ? '▲' : '▼' }} {{ liabilitiesChange.pct }}% MoM
+          </span>
         </div>
         <template v-if="loading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
           <div class="skeleton skeleton-text" style="width: 40%;"></div>
         </template>
         <template v-else>
-          <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(totalLiabilities) }}</div>
-          <div class="text-warning" style="font-size: 0.875rem; margin-top: 0.5rem; display: flex; align-items: center;">
-            <svg style="width: 16px; height: 16px; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+          <div style="font-size: 2rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; margin: 0.25rem 0;">RM{{ formatCurrency(totalLiabilities) }}</div>
+          
+          <div v-if="liabilitiesChange" :class="liabilitiesChange.isPositive ? 'text-danger' : 'text-success'" style="font-size: 0.8rem; margin-top: 0.25rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+            <svg style="width: 14px; height: 14px;" :style="{ transform: liabilitiesChange.isPositive ? 'none' : 'rotate(180deg)' }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
-            Outstanding Debt
+            {{ liabilitiesChange.isPositive ? 'Increased' : 'Reduced' }} by RM{{ formatCurrency(Math.abs(liabilitiesChange.diff)) }}
+          </div>
+          
+          <div v-if="totalLiabilities > 0" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+            <div style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.05);">
+              <div 
+                v-if="totalLoans > 0" 
+                :style="{ width: (totalLoans / totalLiabilities * 100) + '%', background: '#3B82F6' }" 
+                title="Normal Loans"
+              ></div>
+              <div 
+                v-if="totalCreditCards > 0" 
+                :style="{ width: (totalCreditCards / totalLiabilities * 100) + '%', background: '#EF4444' }" 
+                title="Credit Cards"
+              ></div>
+              <div 
+                v-if="totalPayLater > 0" 
+                :style="{ width: (totalPayLater / totalLiabilities * 100) + '%', background: '#F59E0B' }" 
+                title="Pay Later (BNPL)"
+              ></div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; margin-top: 0.5rem; font-size: 0.7rem; color: var(--text-muted);">
+              <span v-if="totalLoans > 0" style="display: flex; align-items: center; gap: 0.25rem;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #3B82F6; display: inline-block;"></span>
+                Loans: {{ (totalLoans / totalLiabilities * 100).toFixed(0) }}%
+              </span>
+              <span v-if="totalCreditCards > 0" style="display: flex; align-items: center; gap: 0.25rem;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
+                Cards: {{ (totalCreditCards / totalLiabilities * 100).toFixed(0) }}%
+              </span>
+              <span v-if="totalPayLater > 0" style="display: flex; align-items: center; gap: 0.25rem;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #F59E0B; display: inline-block;"></span>
+                BNPL: {{ (totalPayLater / totalLiabilities * 100).toFixed(0) }}%
+              </span>
+            </div>
+          </div>
+          <div v-else class="text-muted" style="font-size: 0.8rem; margin-top: 0.5rem;">
+            No outstanding debt
           </div>
         </template>
       </div>
 
       <!-- Net Worth Card -->
-      <div id="tour-net-worth" class="card" style="background: var(--accent-gradient); border: none;">
-        <div style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem; font-weight: 500;">
-          Estimated Net Worth
-          <Tooltip title="Estimated Net Worth" description="Your total wealth calculated by subtracting your debts from your assets." example="(Liquid + Invested) - Liabilities" />
+      <div id="tour-net-worth" class="card card-networth">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+          <span style="color: rgba(255, 255, 255, 0.85); font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
+            Estimated Net Worth
+            <Tooltip title="Estimated Net Worth" description="Your total wealth calculated by subtracting your debts from your assets." example="(Liquid + Invested) - Liabilities" />
+          </span>
+          <span v-if="!loading && assetsDelta" style="background: rgba(255, 255, 255, 0.15); color: #fff; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.25);">
+            {{ assetsDelta.isPositive ? '▲' : '▼' }} {{ assetsDelta.pct }}% MoM
+          </span>
         </div>
         <template v-if="loading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0; background: rgba(255,255,255,0.15);"></div>
           <div class="skeleton skeleton-text" style="width: 45%; background: rgba(255,255,255,0.15);"></div>
         </template>
         <template v-else>
-          <div style="font-size: 2rem; font-weight: 700; color: #fff;">RM{{ formatCurrency(netWorth) }}</div>
-          <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; margin-top: 0.5rem;">
+          <div style="font-size: 2rem; font-weight: 700; color: #fff; letter-spacing: -0.5px; margin: 0.25rem 0;">RM{{ formatCurrency(netWorth) }}</div>
+          <div style="color: rgba(255, 255, 255, 0.8); font-size: 0.8rem; margin-top: 0.5rem;">
             Assets - Liabilities
           </div>
         </template>
@@ -161,27 +223,32 @@
         </div>
       </div>
       <div class="card" style="display: flex; flex-direction: column;">
-        <h3 style="margin-bottom: 1rem; font-weight: 600;">
-          Monthly Cash Flow ({{ monthsList[selectedMonth - 1] }})
-          <Tooltip title="Cash Flow Diagram" description="A visual breakdown of how your income is split into expenses and savings this month." example="" />
-        </h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+          <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
+            Monthly Cash Flow ({{ monthsList[selectedMonth - 1] }})
+            <Tooltip title="Cash Flow Diagram" description="A visual breakdown of how your income is split into expenses and savings this month." example="" />
+          </h3>
+          <span v-if="!loading" :style="{
+            background: cashflowPercentage >= 20 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+            color: cashflowPercentage >= 20 ? 'var(--success)' : 'var(--warning)',
+            border: cashflowPercentage >= 20 ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)'
+          }" style="padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">
+            Savings Rate: {{ cashflowPercentage.toFixed(0) }}%
+          </span>
+        </div>
         
-        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 1.5rem; padding: 1rem; background: var(--bg-background); border-radius: 8px;">
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 1.5rem; padding: 1.25rem; background: rgba(255, 255, 255, 0.015); border: 1px solid var(--border-color); border-radius: 8px;">
           <div style="display: flex; justify-content: space-between; font-weight: 600; color: var(--success); align-items: center;">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <svg style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;">
+              <svg style="width: 18px; height: 18px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Total Income
             </div>
-            <span>RM{{ formatCurrency(currentMonthIncome) }}</span>
+            <span style="font-size: 1.1rem;">RM{{ formatCurrency(currentMonthIncome) }}</span>
           </div>
           
-          <div style="display: flex; height: 32px; border-radius: 16px; overflow: hidden; background: var(--border-color);">
-            <div :style="{ width: expensePercentage + '%', background: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 600, transition: 'width 0.5s ease' }">
-               {{ expensePercentage >= 5 ? expensePercentage.toFixed(1) + '%' : '' }}
-            </div>
-            <div :style="{ width: cashflowPercentage + '%', background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 600, transition: 'width 0.5s ease' }">
-               {{ cashflowPercentage >= 5 ? cashflowPercentage.toFixed(1) + '%' : '' }}
-            </div>
+          <div style="display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: rgba(255, 255, 255, 0.05);">
+            <div :style="{ width: expensePercentage + '%', background: 'var(--danger)', transition: 'width 0.5s ease' }" title="Expenses"></div>
+            <div :style="{ width: cashflowPercentage + '%', background: 'var(--accent-primary)', transition: 'width 0.5s ease' }" title="Savings"></div>
           </div>
           
           <div style="display: flex; justify-content: space-between; font-size: 0.875rem;">
@@ -190,14 +257,14 @@
                  <svg style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>
                  Total Expenses
                </div>
-               <div style="font-weight: 500; font-size: 1rem; margin-top: 0.25rem;">RM{{ formatCurrency(currentMonthExpenses) }}</div>
+               <div style="font-weight: 700; font-size: 1.1rem; margin-top: 0.25rem; color: #fff;">RM{{ formatCurrency(currentMonthExpenses) }}</div>
             </div>
             <div style="color: var(--accent-primary); text-align: right;">
                <div style="font-weight: 600; display: flex; align-items: center; justify-content: flex-end; gap: 0.25rem;">
                  Savings (Net Flow)
                  <svg style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
                </div>
-               <div style="font-weight: 500; font-size: 1rem; margin-top: 0.25rem;">RM{{ formatCurrency(currentMonthNetCashFlow) }}</div>
+               <div style="font-weight: 700; font-size: 1.1rem; margin-top: 0.25rem; color: #fff;">RM{{ formatCurrency(currentMonthNetCashFlow) }}</div>
             </div>
           </div>
         </div>
@@ -388,6 +455,9 @@ const totalAssets = ref(0)
 const totalLiquidAssets = ref(0)
 const profitPercentage = ref(0)
 const totalLiabilities = ref(0)
+const totalLoans = ref(0)
+const totalCreditCards = ref(0)
+const totalPayLater = ref(0)
 const rawSnapshots = ref([])
 const trendData = ref([])
 
@@ -412,6 +482,34 @@ const expensePercentage = computed(() => {
 const cashflowPercentage = computed(() => {
   if (currentMonthIncome.value <= 0) return 0;
   return Math.max(0, 100 - expensePercentage.value);
+})
+
+const assetsDelta = computed(() => {
+  if (assetsOverTimeData.value.length < 2) return null;
+  const data = assetsOverTimeData.value;
+  const current = data[data.length - 1].totalBalance;
+  const previous = data[data.length - 2].totalBalance;
+  if (previous <= 0) return null;
+  const pct = ((current - previous) / previous) * 100;
+  return {
+    pct: pct.toFixed(1),
+    isPositive: pct >= 0,
+    amount: current - previous
+  };
+})
+
+const prevTotalLiabilities = ref(0)
+const liabilitiesChange = computed(() => {
+  if (!prevTotalLiabilities.value) return null;
+  const current = totalLiabilities.value;
+  const previous = prevTotalLiabilities.value;
+  const pct = ((current - previous) / previous) * 100;
+  const diff = current - previous;
+  return {
+    pct: pct.toFixed(1),
+    isPositive: pct >= 0,
+    diff: diff
+  };
 })
 
 const formatCurrency = (val) => {
@@ -558,8 +656,62 @@ const fetchData = async () => {
         }
       }
     })
+
+    let loansSum = 0
+    let ccSum = 0
+    let plSum = 0
     
-    totalLiabilities.value = Object.values(latestPerLiability).reduce((sum, s) => sum + parseFloat(s.remaining_principal), 0)
+    Object.values(latestPerLiability).forEach(s => {
+      const categoryName = (s.category_name || '').toLowerCase()
+      const principal = parseFloat(s.remaining_principal) || 0
+      if (categoryName.includes('credit card')) {
+        ccSum += principal
+      } else if (categoryName.includes('pay later') || categoryName.includes('bnpl')) {
+        plSum += principal
+      } else {
+        loansSum += principal
+      }
+    })
+    
+    totalLoans.value = loansSum
+    totalCreditCards.value = ccSum
+    totalPayLater.value = plSum
+    totalLiabilities.value = loansSum + ccSum + plSum
+
+    // Previous month total liabilities calculation
+    let prevM = currentM - 1
+    let prevY = currentY
+    if (prevM === 0) {
+      prevM = 12
+      prevY -= 1
+    }
+    
+    const prevPriorSnaps = liabRes.data.filter(s => {
+       const snapY = Number(s.year)
+       const snapM = Number(s.month)
+       if (snapY < prevY) return true;
+       if (snapY === prevY && snapM <= prevM) return true;
+       return false;
+    })
+    
+    const prevLatestPerLiability = {}
+    prevPriorSnaps.forEach(s => {
+      const key = `${s.category}_${s.lender}`
+      if (!prevLatestPerLiability[key]) {
+        prevLatestPerLiability[key] = s
+      } else {
+        const existing = prevLatestPerLiability[key]
+        if (s.year > existing.year || (s.year === existing.year && s.month > existing.month)) {
+          prevLatestPerLiability[key] = s
+        }
+      }
+    })
+    
+    let prevLiabilitiesSum = 0
+    Object.values(prevLatestPerLiability).forEach(s => {
+      prevLiabilitiesSum += parseFloat(s.remaining_principal) || 0
+    })
+    prevTotalLiabilities.value = prevLiabilitiesSum
   } catch (e) {
     console.error(e)
   }

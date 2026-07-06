@@ -24,113 +24,104 @@
     </div>
 
     <div v-if="activeTab === 'TARGETS'" class="card" style="margin-bottom: 2rem;">
-       <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
-         <thead>
-           <tr style="border-bottom: 1px solid var(--border-color);">
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Category / Name</th>
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Type</th>
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Limit ({{ currentMonthStr }})</th>
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Source</th>
-             <th style="padding: 0.75rem 0; text-align: right; color: var(--text-muted); font-weight: 500;">Actions</th>
-           </tr>
-         </thead>
-         <tbody>
-           <tr v-if="mergedTargetRows.length === 0">
-             <td colspan="5" style="text-align: center; padding: 3rem 2rem;">
-               <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎯</div>
-               <div style="font-weight: 600; margin-bottom: 0.4rem;">No budget targets yet</div>
-               <div class="text-muted" style="font-size: 0.875rem; max-width: 360px; margin: 0 auto;">Set spending limits or income goals for expense categories or names. Targets help you see how well you're sticking to your budget each month.</div>
-             </td>
-           </tr>
-
-           <tr v-for="row in paginatedTargets" :key="row.key"
-             style="border-bottom: 1px solid var(--border-color);"
-             :style="row.isDefault ? 'opacity: 0.65;' : ''"
-           >
-             <!-- Category / Name -->
-             <td data-label="Category / Name" style="padding: 0.75rem 0; font-weight: 500;">
-               <span v-if="row.isNameTarget" class="text-muted" style="font-size: 0.75em; margin-right: 0.4rem; border: 1px solid var(--border-color); padding: 0.1rem 0.3rem; border-radius: 4px;">NAME</span>
-               {{ row.label }}
-             </td>
-
-             <!-- Type -->
-             <td data-label="Type" style="padding: 0.75rem 0;">
-               <span :class="row.type === 'INCOME' ? 'text-success' : 'text-danger'">{{ row.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
-             </td>
-
-             <!-- Limit amount -->
-             <td data-label="Limit" style="padding: 0.75rem 0;">
-               RM{{ formatCurrency(row.amount) }}
-               <div v-if="row.target && (row.target.start_date || row.target.end_date)" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
-                 Active: {{ row.target.start_date || 'Forever' }} → {{ row.target.end_date || 'Forever' }}
-               </div>
-               <div v-if="row.target && row.target.status === 'ARCHIVED'" style="font-size: 0.75rem; color: var(--warning); margin-top: 0.2rem;">(Archived)</div>
-               <div v-if="row.target && row.target.paused_months && row.target.paused_months.includes(currentMonthKey)" style="font-size: 0.75rem; color: var(--warning); margin-top: 0.2rem;">(Paused this month)</div>
-             </td>
-
-             <!-- Source badge -->
-             <td data-label="Source" style="padding: 0.75rem 0;">
-               <span v-if="row.isDefault"
-                 style="font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-weight: 600; background: rgba(255,255,255,0.07); color: var(--text-muted); border: 1px solid var(--border-color);"
-               >🔁 Default</span>
-               <span v-else
-                 style="font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-weight: 600; background: rgba(99,102,241,0.15); color: var(--accent-primary); border: 1px solid rgba(99,102,241,0.3);"
-               >✏️ Custom</span>
-             </td>
-
-             <!-- Actions -->
-             <td data-label="Actions" style="padding: 0.75rem 0; text-align: right;">
-               <div style="display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap;">
-                 <template v-if="row.isDefault">
-                   <button class="btn btn-primary" style="padding: 0.2rem 0.55rem; font-size: 0.75rem;" @click="openModalForCategory(row.categoryObj)">Set Custom</button>
+       <div class="targets-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+         <div v-if="mergedTargetRows.length === 0" style="text-align: center; padding: 3rem 2rem;">
+           <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎯</div>
+           <div style="font-weight: 600; margin-bottom: 0.4rem;">No budget targets yet</div>
+           <div class="text-muted" style="font-size: 0.875rem; max-width: 360px; margin: 0 auto;">Set spending limits or income goals for expense categories or names. Targets help you see how well you're sticking to your budget each month.</div>
+         </div>
+         <div v-else v-for="row in paginatedTargets" :key="row.key" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); transition: background var(--transition-fast);" :style="row.isDefault ? 'opacity: 0.65;' : ''">
+           <div style="display: flex; align-items: center; gap: 0.75rem;">
+             <div :style="{
+               width: '32px',
+               height: '32px',
+               borderRadius: '50%',
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center',
+               background: row.type === 'INCOME' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+               color: row.type === 'INCOME' ? 'var(--success)' : 'var(--danger)',
+               fontWeight: '600'
+             }">
+               {{ row.type === 'INCOME' ? '↑' : '↓' }}
+             </div>
+             <div style="display: flex; flex-direction: column;">
+               <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">
+                 <span v-if="row.isNameTarget" class="text-muted" style="font-size: 0.7em; margin-right: 0.4rem; border: 1px solid var(--border-color); padding: 0.1rem 0.3rem; border-radius: 4px;">NAME</span>
+                 {{ row.label }}
+               </span>
+               <span style="font-size: 0.75rem; color: var(--text-muted);">
+                 Limit: <strong style="color: var(--text-primary);">RM{{ formatCurrency(row.amount) }}</strong>
+                 <template v-if="row.target && (row.target.start_date || row.target.end_date)">
+                   • Active: {{ row.target.start_date || 'Forever' }} → {{ row.target.end_date || 'Forever' }}
                  </template>
-                 <template v-else-if="row.target">
-                   <button v-if="row.target.status === 'ACTIVE' && !(row.target.paused_months && row.target.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="pauseTargetMonth(row.target.id)">Pause</button>
-                   <button v-if="row.target.status === 'ACTIVE' && (row.target.paused_months && row.target.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="resumeTargetMonth(row.target.id)">Resume</button>
-                   <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="openModal(row.target)">Edit</button>
-                   <button class="btn btn-danger" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="deleteTarget(row.target.id)">Delete</button>
-                 </template>
-                 <template v-else>
-                   <button class="btn btn-secondary" style="padding: 0.2rem 0.55rem; font-size: 0.75rem;" @click="openModal(row.target)">Edit</button>
-                   <button class="btn btn-danger" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="deleteTarget(row.target.id)">Delete</button>
-                 </template>
-               </div>
-             </td>
-           </tr>
-         </tbody>
-       </table>
-       <Pagination v-model="currentPageTargets" :totalItems="mergedTargetRows.length" :itemsPerPage="itemsPerPage" />
+                 <template v-if="row.target && row.target.status === 'ARCHIVED'"> • (Archived)</template>
+                 <template v-if="row.target && row.target.paused_months && row.target.paused_months.includes(currentMonthKey)"> • (Paused)</template>
+               </span>
+             </div>
+           </div>
+           
+           <div style="display: flex; align-items: center; gap: 1rem;">
+             <span v-if="row.isDefault" style="font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-weight: 600; background: rgba(255,255,255,0.07); color: var(--text-muted); border: 1px solid var(--border-color);">🔁 Default</span>
+             <span v-else style="font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-weight: 600; background: rgba(99,102,241,0.15); color: var(--accent-primary); border: 1px solid rgba(99,102,241,0.3);">✏️ Custom</span>
+             
+             <div style="display: flex; gap: 0.4rem; justify-content: flex-end; flex-wrap: wrap;">
+               <template v-if="row.isDefault">
+                 <button class="btn btn-primary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="openModalForCategory(row.categoryObj)">Set Custom</button>
+               </template>
+               <template v-else-if="row.target">
+                 <button v-if="row.target.status === 'ACTIVE' && !(row.target.paused_months && row.target.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="pauseTargetMonth(row.target.id)">Pause</button>
+                 <button v-if="row.target.status === 'ACTIVE' && (row.target.paused_months && row.target.paused_months.includes(currentMonthKey))" class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="resumeTargetMonth(row.target.id)">Resume</button>
+                 <button class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="openModal(row.target)">Edit</button>
+                 <button class="btn btn-danger" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="deleteTarget(row.target.id)">Delete</button>
+               </template>
+               <template v-else>
+                 <button class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="openModal(row.target)">Edit</button>
+                 <button class="btn btn-danger" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="deleteTarget(row.target.id)">Delete</button>
+               </template>
+             </div>
+           </div>
+         </div>
+         <Pagination v-model="currentPageTargets" :totalItems="mergedTargetRows.length" :itemsPerPage="itemsPerPage" />
+       </div>
     </div>
 
     <div v-if="activeTab === 'CATEGORIES'" class="card" style="margin-bottom: 2rem;">
-       <table class="data-table responsive-table" style="width: 100%; text-align: left; border-collapse: collapse;">
-         <thead>
-           <tr style="border-bottom: 1px solid var(--border-color);">
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Name</th>
-             <th style="padding: 0.75rem 0; color: var(--text-muted); font-weight: 500;">Type</th>
-             <th style="padding: 0.75rem 0; text-align: right; color: var(--text-muted); font-weight: 500;">Actions</th>
-           </tr>
-         </thead>
-         <tbody>
-           <tr v-if="categories.length === 0">
-             <td colspan="3" class="text-muted" style="text-align: center; padding: 2rem;">No categories found.</td>
-           </tr>
-           <tr v-for="c in paginatedCategories" :key="c.id" style="border-bottom: 1px solid var(--border-color);">
-             <td data-label="Name" style="padding: 0.75rem 0; font-weight: 500;">{{ c.name }}</td>
-             <td data-label="Type" style="padding: 0.75rem 0;">
-               <span :class="c.type === 'INCOME' ? 'text-success' : 'text-danger'">{{ c.type === 'INCOME' ? 'Income' : 'Expense' }}</span>
-             </td>
-             <td data-label="Actions" style="padding: 0.75rem 0; text-align: right; display: flex; justify-content: flex-end; gap: 0.5rem;">
-               <span v-if="c.is_default" class="text-muted" style="font-size: 0.75rem; padding: 0.2rem;">Default</span>
-               <template v-else>
-                 <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="openCategoryModal(c)">Edit</button>
-                 <button class="btn btn-danger" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @click="deleteCategory(c.id)">Delete</button>
-               </template>
-             </td>
-           </tr>
-         </tbody>
-       </table>
-       <Pagination v-model="currentPageCategories" :totalItems="categories.length" :itemsPerPage="itemsPerPage" />
+       <div class="categories-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+         <div v-if="categories.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No categories found.</div>
+         <div v-else v-for="c in paginatedCategories" :key="c.id" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); transition: background var(--transition-fast);">
+           <div style="display: flex; align-items: center; gap: 0.75rem;">
+             <div :style="{
+               width: '32px',
+               height: '32px',
+               borderRadius: '50%',
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center',
+               background: c.type === 'INCOME' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+               color: c.type === 'INCOME' ? 'var(--success)' : 'var(--danger)',
+               fontWeight: '600'
+             }">
+               {{ c.type === 'INCOME' ? '↑' : '↓' }}
+             </div>
+             <div style="display: flex; flex-direction: column;">
+               <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">{{ c.name }}</span>
+               <span style="font-size: 0.75rem; color: var(--text-muted);">{{ c.type === 'INCOME' ? 'Income category' : 'Expense category' }}</span>
+             </div>
+           </div>
+           
+           <div style="display: flex; align-items: center; gap: 1rem;">
+             <span v-if="c.is_default" class="text-muted" style="font-size: 0.75rem; padding: 0.2rem;">Default</span>
+             <template v-else>
+               <div style="display: flex; gap: 0.4rem;">
+                 <button class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="openCategoryModal(c)">Edit</button>
+                 <button class="btn btn-danger" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="deleteCategory(c.id)">Delete</button>
+               </div>
+             </template>
+           </div>
+         </div>
+         <Pagination v-model="currentPageCategories" :totalItems="categories.length" :itemsPerPage="itemsPerPage" />
+       </div>
     </div>
 
     <Modal :show="showModal" :title="form.id ? 'Edit Target' : 'Add Target'" @close="showModal = false">

@@ -29,15 +29,39 @@ const props = defineProps({
 const chartData = computed(() => {
   return {
     labels: props.labels,
-    datasets: props.datasets.map(ds => ({
-      ...ds,
-      tension: ds.stepped ? 0 : (ds.tension !== undefined ? ds.tension : 0.4), // Smooth curves by default
-      pointBackgroundColor: ds.borderColor || '#3B82F6',
-      pointBorderColor: '#1A233A',
-      pointBorderWidth: 2,
-      pointRadius: 4,
-      pointHoverRadius: 6
-    }))
+    datasets: props.datasets.map(ds => {
+      const baseColor = ds.borderColor || '#3B82F6';
+      return {
+        ...ds,
+        tension: ds.stepped ? 0 : (ds.tension !== undefined ? ds.tension : 0.45),
+        pointBackgroundColor: baseColor,
+        pointBorderColor: '#0c101b',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: baseColor,
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+        fill: ds.fill !== undefined ? ds.fill : true,
+        backgroundColor: (context) => {
+          const chart = context.chart;
+          const {ctx, chartArea} = chart;
+          if (!chartArea) return null;
+          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          
+          let colorStart = 'rgba(59, 130, 246, 0.25)';
+          if (baseColor === '#10B981' || baseColor === 'var(--success)') {
+            colorStart = 'rgba(16, 185, 129, 0.25)';
+          } else if (baseColor === '#8B5CF6' || baseColor === 'var(--accent-secondary)') {
+            colorStart = 'rgba(139, 92, 246, 0.25)';
+          }
+          
+          gradient.addColorStop(0, colorStart);
+          gradient.addColorStop(1, 'rgba(8, 11, 17, 0.01)');
+          return gradient;
+        }
+      }
+    })
   }
 })
 

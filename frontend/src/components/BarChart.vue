@@ -31,7 +31,42 @@ const chartData = computed(() => {
   if (props.datasets) {
     return {
       labels: props.labels,
-      datasets: props.datasets
+      datasets: props.datasets.map(ds => {
+        return {
+          ...ds,
+          borderRadius: 6,
+          borderSkipped: false,
+          backgroundColor: (context) => {
+            const chart = context.chart;
+            const {ctx, chartArea} = chart;
+            if (!chartArea) return '#3B82F6';
+            
+            const index = context.dataIndex;
+            let baseColor = ds.backgroundColor;
+            if (Array.isArray(baseColor)) {
+              baseColor = baseColor[index] || '#3B82F6';
+            } else {
+              baseColor = baseColor || '#3B82F6';
+            }
+            
+            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            let colorStart = 'rgba(59, 130, 246, 0.85)';
+            let colorEnd = 'rgba(59, 130, 246, 0.2)';
+            
+            if (baseColor === '#10B981' || baseColor === 'var(--success)') {
+              colorStart = 'rgba(16, 185, 129, 0.85)';
+              colorEnd = 'rgba(16, 185, 129, 0.2)';
+            } else if (baseColor === '#EF4444' || baseColor === 'var(--danger)') {
+              colorStart = 'rgba(239, 68, 68, 0.85)';
+              colorEnd = 'rgba(239, 68, 68, 0.2)';
+            }
+            
+            gradient.addColorStop(0, colorStart);
+            gradient.addColorStop(1, colorEnd);
+            return gradient;
+          }
+        }
+      })
     }
   }
   return {
@@ -39,8 +74,8 @@ const chartData = computed(() => {
     datasets: [
       {
         label: props.label,
-        backgroundColor: '#3B82F6', // Vibrant blue
-        borderRadius: 4,
+        backgroundColor: '#3B82F6',
+        borderRadius: 6,
         data: props.data
       }
     ]

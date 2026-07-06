@@ -44,45 +44,44 @@
     </div>
 
     <div class="card">
-      <div class="table-container">
-        <table class="responsive-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>Category</th>
-              <th>Name</th>
-              <th>Description</th>
-              <th>Amount</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="filteredHistory.length === 0">
-              <td colspan="7" class="text-center text-muted" style="text-align: center;">No transactions match your filters.</td>
-            </tr>
-            <tr v-for="item in paginatedHistory" :key="item.id">
-              <td data-label="Date">{{ item.date }}</td>
-              <td data-label="Type">
-                <span :class="item.type === 'INCOME' ? 'text-success' : 'text-danger'">
-                  {{ item.type === 'INCOME' ? 'Income' : 'Expense' }}
+      <div class="transactions-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <div v-if="filteredHistory.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No transactions match your filters.</div>
+        <div v-else v-for="item in paginatedHistory" :key="item.id" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); transition: background var(--transition-fast);">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div :style="{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: item.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              color: item.type === 'INCOME' ? 'var(--success)' : 'var(--danger)',
+              fontWeight: '600'
+            }">
+              {{ item.type === 'INCOME' ? '↑' : '↓' }}
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">
+                {{ item.name }}
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-left: 0.5rem;">
+                  ({{ item.category_name || 'Uncategorized' }})
                 </span>
-              </td>
-              <td data-label="Category">{{ item.category_name || 'Uncategorized' }}</td>
-              <td data-label="Name" style="font-weight: 500;">{{ item.name }}</td>
-              <td data-label="Desc">{{ item.description || '-' }}</td>
-              <td data-label="Amount" style="font-weight: 600;">RM{{ formatCurrency(item.amount) }}</td>
-              <td data-label="Actions">
-                <div class="action-buttons">
-                  <button class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="editTransaction(item)">Edit</button>
-                  <button class="btn btn-danger" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" @click="deleteTransaction(item.id)">Delete</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">
+                Amount: <strong :class="item.type === 'INCOME' ? 'text-success' : 'text-danger'">RM{{ formatCurrency(item.amount) }}</strong> • {{ item.date }}
+                <template v-if="item.description"> • <span style="font-style: italic;">{{ item.description }}</span></template>
+              </span>
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 0.4rem;">
+            <button class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="editTransaction(item)">Edit</button>
+            <button class="btn btn-danger" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" @click="deleteTransaction(item.id)">Delete</button>
+          </div>
+        </div>
+        <Pagination v-model="currentPage" :totalItems="filteredHistory.length" :itemsPerPage="itemsPerPage" />
       </div>
-      <Pagination v-model="currentPage" :totalItems="filteredHistory.length" :itemsPerPage="itemsPerPage" />
     </div>
 
     <!-- Modal -->
@@ -149,10 +148,13 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import Pagination from '@/components/Pagination.vue'
 import SearchableSelect from '@/components/SearchableSelect.vue'
+
+const route = useRoute()
 
 const history = ref([])
 const showModal = ref(false)
@@ -381,5 +383,14 @@ onMounted(() => {
   fetchHistory()
   fetchCategories()
   fetchTargets()
+  if (route.query.add === 'true') {
+    openModal()
+  }
+})
+
+watch(() => route.query.add, (newVal) => {
+  if (newVal === 'true') {
+    openModal()
+  }
 })
 </script>

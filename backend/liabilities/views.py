@@ -73,8 +73,9 @@ class LiabilitySnapshotViewSet(viewsets.ModelViewSet):
             if prev_snapshot:
                 remaining_principal = prev_snapshot.remaining_principal - monthly_payment
             else:
-                is_credit_card = category and category.name.lower() == 'credit cards'
-                remaining_principal = 0 if is_credit_card else (original_loan_amount - monthly_payment)
+                is_credit_card = category and 'credit card' in category.name.lower()
+                is_pay_later = category and ('pay later' in category.name.lower() or 'bnpl' in category.name.lower())
+                remaining_principal = 0 if (is_credit_card or is_pay_later) else (original_loan_amount - monthly_payment)
 
         serializer.save(
             user=self.request.user, 
@@ -109,8 +110,9 @@ class LiabilitySnapshotViewSet(viewsets.ModelViewSet):
             if prev_snapshot:
                 kwargs['remaining_principal'] = prev_snapshot.remaining_principal - monthly_payment
             else:
-                is_credit_card = category and category.name.lower() == 'credit cards'
-                kwargs['remaining_principal'] = 0 if is_credit_card else (kwargs.get('original_loan_amount', serializer.instance.original_loan_amount) - monthly_payment)
+                is_credit_card = category and 'credit card' in category.name.lower()
+                is_pay_later = category and ('pay later' in category.name.lower() or 'bnpl' in category.name.lower())
+                kwargs['remaining_principal'] = 0 if (is_credit_card or is_pay_later) else (kwargs.get('original_loan_amount', serializer.instance.original_loan_amount) - monthly_payment)
 
         serializer.save(**kwargs)
 
@@ -123,10 +125,14 @@ class LiabilitySnapshotViewSet(viewsets.ModelViewSet):
             return Response({'error': 'month and year are required'}, status=400)
             
         qs = self.get_queryset().filter(month=month, year=year)
+        term_qs = qs.exclude(category__name__icontains='credit card').exclude(category__name__icontains='pay later').exclude(category__name__icontains='bnpl')
         
         total_remaining = qs.aggregate(total=Sum('remaining_principal'))['total'] or 0
-        total_original = qs.aggregate(total=Sum('original_loan_amount'))['total'] or 0
+        total_original = term_qs.aggregate(total=Sum('original_loan_amount'))['total'] or 0
         total_monthly = qs.aggregate(total=Sum('monthly_payment'))['total'] or 0
+        
+        term_remaining = term_qs.aggregate(total=Sum('remaining_principal'))['total'] or 0
+        total_debt_reduced = total_original - term_remaining
         
         # By Category
         cat_qs = qs.values(name=F('category__name')).annotate(total=Sum('remaining_principal'))
@@ -142,15 +148,18 @@ class LiabilitySnapshotViewSet(viewsets.ModelViewSet):
             prev_year -= 1
             
         prev_qs = self.get_queryset().filter(month=prev_month, year=prev_year)
+        prev_term_qs = prev_qs.exclude(category__name__icontains='credit card').exclude(category__name__icontains='pay later').exclude(category__name__icontains='bnpl')
+        
         prev_total_remaining = prev_qs.aggregate(total=Sum('remaining_principal'))['total'] or 0
-        prev_total_original = prev_qs.aggregate(total=Sum('original_loan_amount'))['total'] or 0
-        prev_total_debt_reduced = prev_total_original - prev_total_remaining
+        prev_total_original = prev_term_qs.aggregate(total=Sum('original_loan_amount'))['total'] or 0
+        prev_term_remaining = prev_term_qs.aggregate(total=Sum('remaining_principal'))['total'] or 0
+        prev_total_debt_reduced = prev_total_original - prev_term_remaining
 
         return Response({
             'total_remaining_principal': total_remaining,
             'total_original_loan_amount': total_original,
             'total_monthly_payment': total_monthly,
-            'total_debt_reduced': total_original - total_remaining,
+            'total_debt_reduced': total_debt_reduced,
             'prev_total_remaining_principal': prev_total_remaining,
             'prev_total_original_loan_amount': prev_total_original,
             'prev_total_debt_reduced': prev_total_debt_reduced,
