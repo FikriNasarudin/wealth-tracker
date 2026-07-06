@@ -87,7 +87,16 @@ const login = async () => {
     localStorage.setItem('refresh_token', data.refresh)
     router.push('/')
   } catch (err) {
-    error.value = 'Invalid email or password'
+    console.error('Login failed:', err)
+    if (!err.response) {
+      // Backend not setup/reachable, fallback to frontend-only demo
+      localStorage.setItem('access_token', 'mock_access_token')
+      localStorage.setItem('refresh_token', 'mock_refresh_token')
+      localStorage.setItem('show_offline_toast', 'true')
+      router.push('/')
+    } else {
+      error.value = 'Invalid email or password'
+    }
   }
 }
 </script>

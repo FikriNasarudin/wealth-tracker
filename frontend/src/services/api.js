@@ -45,6 +45,41 @@ api.interceptors.response.use(
   async error => {
     const originalRequest = error.config
     
+    // If it's a connection/network error and we are running in frontend-only/demo mode
+    if (!error.response && localStorage.getItem('access_token') === 'mock_access_token') {
+      const url = originalRequest?.url || ''
+      console.warn(`[API Offline Mode] Request to ${url} failed. Mocking response.`)
+      
+      let mockData = []
+      if (url.includes('/summary/')) {
+        mockData = {
+          total_income: 0,
+          total_expense: 0,
+          net_worth: 0,
+          liquid_assets: 0,
+          invested_assets: 0,
+          total_assets: 0,
+          total_liabilities: 0,
+          emergency_runway: 0,
+          categories: []
+        }
+      } else if (url.includes('/allocation/')) {
+        mockData = {
+          categories: [],
+          platforms: [],
+          assets: []
+        }
+      }
+      
+      return Promise.resolve({
+        data: mockData,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: originalRequest
+      })
+    }
+    
     // If it's a 401 error and not on an auth endpoint
     if (
       error.response &&

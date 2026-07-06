@@ -117,7 +117,15 @@ const register = async () => {
     localStorage.removeItem('dismissed_onboarding')
     router.push('/')
   } catch (err) {
-    if (err.response?.data?.email) {
+    console.error('Registration failed:', err)
+    if (!err.response) {
+      // Backend not setup/reachable, fallback to frontend-only demo
+      localStorage.setItem('access_token', 'mock_access_token')
+      localStorage.setItem('refresh_token', 'mock_refresh_token')
+      localStorage.setItem('dismissed_onboarding', 'false')
+      localStorage.setItem('show_offline_toast', 'true')
+      router.push('/')
+    } else if (err.response?.data?.email) {
       error.value = err.response.data.email[0]
     } else {
       error.value = 'Registration failed. Please try again.'
