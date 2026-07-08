@@ -364,6 +364,7 @@ const submitTransaction = async () => {
     }
 
     if (editMode.value) {
+      if (!confirm('Are you sure you want to update this transaction?')) return
       await api.put(`/budgeting/transactions/${editingId.value}/`, payload)
     } else {
       await api.post('/budgeting/transactions/', payload)

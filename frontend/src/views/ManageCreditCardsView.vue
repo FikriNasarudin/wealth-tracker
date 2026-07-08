@@ -60,7 +60,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h3 style="font-weight: 600; margin: 0;">
           Your Credit Cards
-          <Tooltip title="Your Credit Cards" description="List of your active credit cards. Track their limits, statement cycles, and current balances." example="Maybank Visa, CIMB Mastercard" />
+          <Tooltip title="Active Credit Cards" description="Track your credit card limits, interest rates, and outstanding balances to monitor spending utilization." example="Maybank Visa, CIMB Mastercard" />
         </h3>
         <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;" @click="showAddModal = true">+ Add Card</button>
       </div>
@@ -117,13 +117,11 @@ const setupCreditCardCategory = async () => {
     const res = await api.get('/liabilities/categories/')
     const categories = res.data
     
-    // Look for an existing category named exactly "Credit Cards"
-    const existing = categories.find(c => c.name.toLowerCase() === 'credit cards')
+    const existing = categories.find(c => c.name.toLowerCase() === 'credit cards' || c.name.toLowerCase() === 'credit card')
     if (existing) {
       creditCardCategoryId.value = existing.id
     } else {
-      // Create it if it doesn't exist
-      const createRes = await api.post('/liabilities/categories/', { name: 'Credit Cards' })
+      const createRes = await api.post('/liabilities/categories/', { name: 'Credit Card' })
       creditCardCategoryId.value = createRes.data.id
     }
   } catch (e) {
@@ -221,6 +219,7 @@ const cancelEditCard = () => {
 
 const saveCard = async () => {
   if (!editingCardId.value || !editingCardName.value.trim() || !editingCardLimit.value) return
+  if (!confirm('Are you sure you want to update this credit card?')) return
   loading.value = true
   try {
     await api.patch(`/liabilities/lenders/${editingCardId.value}/`, {
@@ -270,6 +269,7 @@ const saveCard = async () => {
 const toggleCardStatus = async (card) => {
   try {
     const newStatus = !card.is_active
+    if (!confirm(`Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} "${card.name}"?`)) return
     await api.patch(`/liabilities/lenders/${card.id}/`, { is_active: newStatus })
     card.is_active = newStatus
   } catch (e) {

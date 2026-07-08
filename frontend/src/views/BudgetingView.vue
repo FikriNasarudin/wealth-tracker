@@ -6,10 +6,6 @@
         <p class="text-muted">Monitor your cash flow and expenses.</p>
       </div>
       <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-        <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem; display: flex; align-items: center; gap: 0.25rem;">
-          <svg style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          Help
-        </button>
         <SearchableSelect v-model="selectedPeriod" :options="trendOptions" @change="fetchData" placeholder="Select Period" style="width: 140px;" />
       </div>
     </header>
@@ -19,7 +15,10 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
       <!-- Income Card -->
       <div class="card">
-        <div class="text-muted" style="margin-bottom: 0.75rem; font-weight: 500; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">Total Income</div>
+        <div class="text-muted" style="margin-bottom: 0.75rem; font-weight: 500; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">
+          Total Income
+          <Tooltip title="Total Income" description="The sum of all logged income transactions plus any recurring fixed income for the month." example="Salary + Freelance earnings" />
+        </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
           <div class="skeleton skeleton-text" style="width: 50%;"></div>
@@ -59,7 +58,10 @@
 
       <!-- Expenses Card -->
       <div class="card">
-        <div class="text-muted" style="margin-bottom: 0.75rem; font-weight: 500; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">Total Expenses</div>
+        <div class="text-muted" style="margin-bottom: 0.75rem; font-weight: 500; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">
+          Total Expenses
+          <Tooltip title="Total Expenses" description="The sum of all logged expense transactions plus any recurring fixed costs for the month." example="Rent + Groceries + Subscriptions" />
+        </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
           <div class="skeleton skeleton-text" style="width: 45%;"></div>
@@ -106,7 +108,7 @@
       <div id="tour-cash-flow" class="card">
         <div class="text-muted" style="margin-bottom: 0.75rem; font-weight: 500; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em;">
           Net Cash Flow
-          <Tooltip title="Net Cash Flow" description="Income minus Expenses for the selected month. A positive value means you earned more than you spent." example="RM5,000 Income − RM500 Expenses = RM4,500 Net Cash Flow" />
+          <Tooltip title="Net Cash Flow Summary" description="Your income minus expenses for the selected month. A positive number indicates you earned more than you spent." example="Income RM5,000 - Expenses RM4,000 = Surplus RM1,000" />
         </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
@@ -148,7 +150,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
             Income vs Expense Trend
-            <Tooltip title="Income vs Expense Trend" description="Tracks your total income and total expenses over the selected date range to visualize your cash flow history." example="Monthly earnings vs total cash outflows" />
+            <Tooltip title="Earning vs Spending Flow" description="Timeline of your monthly earnings compared to your expenditures over a selected timeframe." />
           </h3>
           <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
             <SearchableSelect v-model="trendStart" :options="trendOptions" @change="fetchData" placeholder="Start Month" />
@@ -165,7 +167,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
           <h3 style="font-weight: 600; margin: 0;">
             Category Targets
-            <Tooltip title="Category Targets" description="Compares your actual spending in each category against the monthly target limits you set." example="Rent target RM1,000 vs spent RM1,000" />
+            <Tooltip title="Budget Category Limits" description="Compare actual monthly spending inside each category against target limits you configured." example="Food limit RM500 vs actual spent RM420" />
           </h3>
           <router-link to="/budgeting/targets" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Manage Targets</router-link>
         </div>
@@ -231,7 +233,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <h3 style="font-weight: 600; margin: 0;">
             Recent Transactions
-            <Tooltip title="Recent Transactions" description="List of your most recent transactions. Click on a transaction to edit or delete it." example="Starbucks coffee purchase, monthly salary deposit" />
+            <Tooltip title="Recent Transactions List" description="Chronological list of recently logged income and expense transactions." />
           </h3>
           <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
             <button class="btn btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;" @click="quickAdd('EXPENSE', 'Food')">🍕 Food</button>
@@ -239,7 +241,7 @@
             <button id="tour-add-txn" class="btn btn-primary" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;" @click="showModal = true">+ Add Transaction</button>
           </div>
         </div>
-        <div class="transaction-list-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <div class="transaction-list-container" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 310px; overflow-y: auto; padding-right: 0.25rem;">
           <div v-if="recentTransactions.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No recent transactions.</div>
           <div v-else v-for="txn in recentTransactions" :key="txn.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); transition: background var(--transition-fast);">
             <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -272,53 +274,52 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
           <h3 style="font-weight: 600; margin: 0;">
             Fixed Income & Costs
-            <Tooltip title="Recurring Items" description="Fixed income like salary, and fixed costs like Netflix, that happen automatically every month." example="Salary, Gym Membership" />
+            <Tooltip title="Recurring Commitments" description="Fixed expenses (like subscriptions) and fixed incomes (like salary) processed automatically every month." />
           </h3>
           <router-link to="/budgeting/recurring" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Manage Items</router-link>
         </div>
         <div v-if="activeUnloggedSubscriptions.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No pending recurring items this month.</div>
         <div v-else>
-          <div class="subscription-list-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <div v-if="activeUnloggedSubscriptions.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No pending recurring items this month.</div>
-          <div v-else v-for="sub in activeUnloggedSubscriptions" :key="sub.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); transition: background var(--transition-fast);" :style="sub.isInactive ? 'opacity: 0.5;' : ''">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <div :style="{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: sub.type === 'INCOME' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                color: sub.type === 'INCOME' ? 'var(--success)' : 'var(--danger)',
-                fontWeight: '600'
-              }">
-                {{ sub.type === 'INCOME' ? '↑' : '↓' }}
-              </div>
-              <div style="display: flex; flex-direction: column;">
-                <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">
-                  {{ sub.name }}
-                  <span v-if="sub.isLogged" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; background: rgba(16,185,129,0.12); color: var(--success); border-radius: 4px; margin-left: 0.5rem; font-weight: 600;">
-                    ✓ {{ sub.type === 'INCOME' ? 'Received' : 'Paid' }}
+          <div class="subscription-list-container" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 310px; overflow-y: auto; padding-right: 0.25rem;">
+            <div v-for="sub in activeUnloggedSubscriptions" :key="sub.id" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); transition: background var(--transition-fast);" :style="sub.isInactive ? 'opacity: 0.5;' : ''">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div :style="{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: sub.type === 'INCOME' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                  color: sub.type === 'INCOME' ? 'var(--success)' : 'var(--danger)',
+                  fontWeight: '600'
+                }">
+                  {{ sub.type === 'INCOME' ? '↑' : '↓' }}
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">
+                    {{ sub.name }}
+                    <span v-if="sub.isLogged" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; background: rgba(16,185,129,0.12); color: var(--success); border-radius: 4px; margin-left: 0.5rem; font-weight: 600;">
+                      ✓ {{ sub.type === 'INCOME' ? 'Received' : 'Paid' }}
+                    </span>
+                    <span v-else-if="sub.isInactive" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; background: var(--border-color); color: var(--text-muted); border-radius: 4px; margin-left: 0.5rem; font-weight: 500;">
+                      Passed
+                    </span>
                   </span>
-                  <span v-else-if="sub.isInactive" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; background: var(--border-color); color: var(--text-muted); border-radius: 4px; margin-left: 0.5rem; font-weight: 500;">
-                    Passed
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">
+                    <template v-if="sub.auto_log_day">
+                      {{ sub.type === 'INCOME' ? 'Auto credit' : 'Auto debit' }} on {{ getOrdinalSuffix(sub.auto_log_day) }}
+                    </template>
+                    <template v-else>Manual</template>
                   </span>
-                </span>
-                <span style="font-size: 0.75rem; color: var(--text-muted);">
-                  <template v-if="sub.auto_log_day">
-                    {{ sub.type === 'INCOME' ? 'Auto credit' : 'Auto debit' }} on {{ getOrdinalSuffix(sub.auto_log_day) }}
-                  </template>
-                  <template v-else>Manual</template>
-                </span>
+                </div>
               </div>
-            </div>
-            <div :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'" style="font-weight: 700; font-size: 1.05rem; text-align: right;">
-              <div>{{ sub.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(sub.amount) }}</div>
-              <div style="font-size: 0.7rem; font-weight: 500; color: var(--text-muted); margin-top: 0.15rem;">/ {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}</div>
+              <div :class="sub.type === 'INCOME' ? 'text-success' : 'text-danger'" style="font-weight: 700; font-size: 1.05rem; text-align: right;">
+                <div>{{ sub.type === 'INCOME' ? '+' : '-' }}RM{{ formatCurrency(sub.amount) }}</div>
+                <div style="font-size: 0.7rem; font-weight: 500; color: var(--text-muted); margin-top: 0.15rem;">/ {{ sub.billing_cycle === 'MONTHLY' ? 'mo' : 'yr' }}</div>
+              </div>
             </div>
           </div>
-        </div>
           
           <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; font-weight: 600;">
             <span>Monthly Equivalent:</span>
@@ -336,17 +337,14 @@
       <div class="card">
         <h3 style="margin-bottom: 1rem; font-weight: 600;">
           Debit Account Breakdown (Recurring Expenses)
-          <Tooltip title="Debit Account Breakdown" description="Visualizes which bank accounts are used to pay for your active recurring items." example="Shows auto-debits linked to your savings account vs credit cards" />
+          <Tooltip title="Linked Accounts Allocation" description="Visual breakdown showing which cash or banking accounts are linked to fund your recurring expenses." />
         </h3>
         <div v-if="debitAccountBreakdown.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">
           No recurring expenses configured with debit accounts.
         </div>
         <div v-else>
-        <div class="debit-breakdown-list" style="display: flex; flex-direction: column; gap: 1rem;">
-          <div v-if="debitAccountBreakdown.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">
-            No recurring expenses configured with debit accounts.
-          </div>
-          <div v-else v-for="item in debitAccountBreakdown" :key="item.name" style="display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color);">
+          <div class="debit-breakdown-list" style="display: flex; flex-direction: column; gap: 1rem; max-height: 310px; overflow-y: auto; padding-right: 0.25rem;">
+            <div v-for="item in debitAccountBreakdown" :key="item.name" style="display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; background: rgba(255,255,255,0.015); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">{{ item.name }}</span>
               <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -420,11 +418,11 @@
         </div>
 
         <div class="form-group" v-if="form.type === 'EXPENSE'">
-          <label class="form-label">Payment Method / Account</label>
+          <label class="form-label">Account (by default it will be cash/main)</label>
           <SearchableSelect 
             v-model="form.paymentAccount" 
             :options="paymentAccountOptions" 
-            placeholder="Search payment account..."
+            placeholder="Search account..."
           />
         </div>
 
@@ -448,23 +446,11 @@ import Modal from '@/components/Modal.vue'
 import BarChart from '@/components/BarChart.vue'
 import Tooltip from '@/components/Tooltip.vue'
 import AIAdvisorCard from '@/components/AIAdvisorCard.vue'
-import { driver } from 'driver.js'
 import SearchableSelect from '@/components/SearchableSelect.vue'
 
 const enableAI = import.meta.env.VITE_ENABLE_AI_ADVISOR === 'true'
 
-const startTour = () => {
-  const driverObj = driver({
-    showProgress: true,
-    steps: [
-      { element: '#tour-cash-flow', popover: { title: 'Net Cash Flow', description: 'This tracks whether you are earning more than you spend. It calculates all your logged transactions as well as your unlogged fixed income and costs.' } },
-      { element: '#tour-categories', popover: { title: 'Recent Transactions', description: 'A quick overview of your latest spending. You can manage detailed targets and limits above.' } },
-      { element: '#tour-subscriptions', popover: { title: 'Fixed Income & Costs', description: 'Add your recurring fixed income (e.g. salary) and costs (e.g. Netflix) here. They will automatically be factored into your disposable income calculation.' } },
-      { element: '#tour-add-txn', popover: { title: 'Add Transaction', description: 'Click here to log a new income or expense. Use the quick add buttons for fast entry!' } }
-    ]
-  });
-  driverObj.drive();
-}
+
 
 const income = ref(0)
 const expenses = ref(0)
@@ -476,6 +462,8 @@ const incomeBreakdown = ref([])
 const recentTransactions = ref([])
 const trendData = ref([])
 const activeTab = ref('EXPENSE')
+
+
 
 const monthlyFixedCosts = computed(() => {
   return activeUnloggedSubscriptions.value
@@ -597,7 +585,7 @@ const getInitialForm = () => ({
   amount: '',
   date: new Date().toISOString().split('T')[0],
   description: '',
-  paymentAccount: ''
+  paymentAccount: 'cash/main'
 })
 
 const form = ref(getInitialForm())
@@ -611,7 +599,7 @@ const categoryOptions = computed(() => {
 
 const paymentAccountOptions = computed(() => {
   return [
-    { value: '', label: 'Cash / Default Account' },
+    { value: 'cash/main', label: 'cash/main' },
     ...creditCards.value.map(cc => ({ value: cc.name, label: `${cc.name} (Credit Card)` }))
   ]
 })
@@ -815,7 +803,7 @@ const fetchCreditCards = async () => {
   try {
     const res = await api.get('/liabilities/lenders/')
     const catRes = await api.get('/liabilities/categories/')
-    const ccCat = catRes.data.find(c => c.name.toLowerCase() === 'credit cards')
+    const ccCat = catRes.data.find(c => c.name.toLowerCase() === 'credit cards' || c.name.toLowerCase() === 'credit card')
     if (ccCat) {
       creditCards.value = res.data.filter(l => l.category === ccCat.id && l.is_active)
     } else {

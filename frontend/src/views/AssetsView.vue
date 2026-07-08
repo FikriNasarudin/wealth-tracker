@@ -6,10 +6,6 @@
         <p class="text-muted">Track your portfolio allocation and profits.</p>
       </div>
       <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-        <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-          <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          Help
-        </button>
         <SearchableSelect v-model="selectedPeriod" :options="trendOptions" @change="handleFilterChange" placeholder="Select Period" style="width: 140px;" />
         <select v-model="filterPlatform" class="form-input" style="width: 140px;" @change="handleFilterChange">
           <option value="">All Platforms</option>
@@ -23,7 +19,7 @@
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           Total Invested
-          <Tooltip title="Total Invested" description="The principal amount of money you have actually put into your investments." example="RM10,000 deposited to a broker" />
+          <Tooltip title="Principal Capital" description="The total amount of cash deposits you have funded into your investment accounts." example="Brokerage deposits, property down payments" />
         </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
@@ -42,7 +38,7 @@
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           Current Balance
-          <Tooltip title="Current Balance" description="The total current market value of all your investments across all platforms." example="RM12,000 portfolio value" />
+          <Tooltip title="Current Portfolio Value" description="The overall value of all your investments valued at current market prices." example="Stock value + crypto value" />
         </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
@@ -61,7 +57,7 @@
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           Absolute Profit
-          <Tooltip title="Absolute Profit" description="The raw monetary difference between your current balance and total invested." example="RM12,000 Balance - RM10,000 Invested = RM2,000 Profit" />
+          <Tooltip title="Net Returns (RM)" description="The absolute gain or loss calculated by subtracting total invested capital from the current balance." />
         </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
@@ -80,7 +76,7 @@
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           True ROI (%)
-          <Tooltip title="True Return on Investment" description="Your absolute profit expressed as a percentage of your total invested amount. The ultimate metric of portfolio performance." example="(2,000 / 10,000) * 100 = 20%" />
+          <Tooltip title="Percentage Gain/Loss" description="Your absolute profit or loss divided by your total invested capital, showing the rate of return." />
         </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
@@ -103,7 +99,7 @@
         <div>
           <h3 style="color: var(--danger); font-weight: 600; margin: 0 0 0.25rem 0; display: flex; align-items: center; gap: 0.25rem;">
             Diversification Risk Warning
-            <Tooltip title="Diversification Risk" description="Alerts when a single platform or asset type exceeds 50% of your portfolio, indicating high concentration risk." example="Ideally keep single platform exposure below 30%" />
+            <Tooltip title="Concentration Warning" description="Alerts you if a single platform or asset type represents a large percentage of your portfolio, showing concentration risk." />
           </h3>
           <p style="margin: 0; color: var(--text-primary); font-size: 0.875rem;">
             <strong>{{ maxConcentration.percentage.toFixed(1) }}%</strong> of your portfolio is concentrated in <strong>{{ maxConcentration.category }}</strong>. A healthy portfolio generally avoids having more than 75% of wealth tied to a single asset class.
@@ -116,7 +112,7 @@
       <div class="card">
         <h3 style="margin-bottom: 1rem; font-weight: 600;">
           By Category
-          <Tooltip title="Asset Allocation by Category" description="Shows how your portfolio is distributed among different asset classes." example="Stocks, Crypto, Gold" />
+          <Tooltip title="Asset Class Allocation" description="Breakdown of your portfolio value distributed by category classes." example="Stocks vs. Crypto vs. Gold" />
         </h3>
         <div v-if="byCategory.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No data available</div>
         <div v-else style="display: flex; justify-content: center; align-items: center; min-height: 250px;">
@@ -126,7 +122,7 @@
       <div class="card">
         <h3 style="margin-bottom: 1rem; font-weight: 600;">
           By Platform
-          <Tooltip title="Asset Allocation by Platform" description="Shows the current value of your investments grouped by individual platforms or brokers." example="Maybank, Luno, IBKR" />
+          <Tooltip title="Custodian Breakdown" description="Breakdown of your portfolio value distributed by individual brokers, platforms, or apps." />
         </h3>
         <div v-if="byPlatform.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No data available</div>
         <div v-else style="display: flex; justify-content: center; align-items: center; min-height: 250px;">
@@ -140,7 +136,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
             Compound Effect (Invested vs Profit)
-            <Tooltip title="Compound Effect" description="Compares the principal amount you invested against the profit generated to visualize your growth." example="RM10,000 Invested vs RM2,000 Profit" />
+            <Tooltip title="Principal vs. Appreciation" description="Compares your invested principal against the accumulated net profits over time." />
           </h3>
           <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
             <SearchableSelect v-model="compoundStart" :options="trendOptions" placeholder="Start Month" />
@@ -157,7 +153,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
             Assets Over Time
-            <Tooltip title="Total Assets Trend" description="Tracks the month-over-month performance and growth of your combined liquid and invested assets." example="Growth of savings plus stocks over 6 months" />
+            <Tooltip title="Historical Assets Trend" description="Chart tracking the historical growth of your combined assets." />
           </h3>
           <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
             <SearchableSelect v-model="assetsOverTimeStart" :options="trendOptions" placeholder="Start Month" />
@@ -174,7 +170,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
             Asset Progress
-            <Tooltip title="Asset Net Growth" description="Displays the net change in your asset values month-over-month." example="Monthly growth target tracking" />
+            <Tooltip title="Allocation Goals Tracking" description="Tracks your asset progress and allocation adjustments month-over-month." />
           </h3>
           <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
             <SearchableSelect v-model="assetProgressStart" :options="trendOptions" placeholder="Start Month" />
@@ -278,20 +274,10 @@ import PieChart from '@/components/PieChart.vue'
 import BarChart from '@/components/BarChart.vue'
 import GraphLine from '@/components/GraphLine.vue'
 import Tooltip from '@/components/Tooltip.vue'
-import { driver } from 'driver.js'
+
 import SearchableSelect from '@/components/SearchableSelect.vue'
 
-const startTour = () => {
-  const driverObj = driver({
-    showProgress: true,
-    steps: [
-      { element: '#tour-asset-metrics', popover: { title: 'Asset Metrics', description: 'See your principal invested vs your current balance to determine your real profits.' } },
-      { element: '#tour-asset-charts', popover: { title: 'Portfolio Allocation', description: 'View exactly how your investments are distributed across different asset classes and platforms.' } },
-      { element: '#tour-add-asset', popover: { title: 'Add Snapshot', description: 'Log your monthly investment performance here to build up your historical charts.' } }
-    ]
-  });
-  driverObj.drive();
-}
+
 
 const totalInvested = ref(0)
 const totalBalance = ref(0)

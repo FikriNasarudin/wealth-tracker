@@ -295,6 +295,7 @@ const resumeMonth = async (id) => {
 }
 
 const archiveSub = async (id) => {
+  if (!confirm('Are you sure you want to archive this subscription?')) return
   try {
     await api.post(`/budgeting/subscriptions/${id}/archive/`)
     await fetchData()
@@ -304,6 +305,7 @@ const archiveSub = async (id) => {
 }
 
 const unarchiveSub = async (id) => {
+  if (!confirm('Are you sure you want to unarchive this subscription?')) return
   try {
     await api.patch(`/budgeting/subscriptions/${id}/`, { status: 'ACTIVE' })
     await fetchData()
@@ -339,6 +341,7 @@ const saveItem = async () => {
     if (!payload.end_date) payload.end_date = null
     
     if (payload.id) {
+      if (!confirm('Are you sure you want to update this recurring item?')) return
       await api.patch(`/budgeting/subscriptions/${payload.id}/`, payload)
     } else {
       await api.post('/budgeting/subscriptions/', payload)

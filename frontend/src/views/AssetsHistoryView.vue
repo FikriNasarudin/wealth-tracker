@@ -470,6 +470,7 @@ const submitSnapshot = async () => {
     }
 
     if (editMode.value) {
+      if (!confirm('Are you sure you want to update this snapshot?')) return
       await api.put(`/assets/snapshots/${editingId.value}/`, payload)
     } else {
       await api.post('/assets/snapshots/', payload)

@@ -5,19 +5,14 @@
         <h1 style="font-weight: 600;">Banking & Liquid Assets</h1>
         <p class="text-muted">Manage your cash, checking, and savings accounts.</p>
       </div>
-      <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-        <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-          <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          Help
-        </button>
-      </div>
+
     </header>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
       <div id="tour-liquid-total" class="card" style="background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%); color: white;">
         <div style="margin-bottom: 0.5rem; font-weight: 500; opacity: 0.9;">
           Total Liquid Assets
-          <Tooltip title="Total Liquid Assets" description="The total available balance across all your cash, savings, and checking accounts." example="Checking + Savings = RM15,000" />
+          <Tooltip title="Cash Reserves" description="Sum of immediately spendable funds across cash, checking, and savings accounts." example="Savings + Cash = RM10k" />
         </div>
         <div style="font-size: 2.5rem; font-weight: 700;">RM{{ formatCurrency(totalLiquidity) }}</div>
       </div>
@@ -27,7 +22,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
         <h3 style="font-weight: 600; margin: 0;">
           Your Accounts
-          <Tooltip title="Your Accounts" description="Keep track of individual balances. Click 'Update Balance' at the end of every month to log a new snapshot." example="Maybank Savings: RM10,000" />
+          <Tooltip title="Institution Accounts" description="Individual banking accounts or physical cash locations you track. Click 'Update Balance' to record a monthly snapshot." />
         </h3>
         <div style="display: flex; gap: 0.5rem;">
           <button class="btn btn-secondary" @click="showManageTypesModal = true" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;">Manage Types</button>
@@ -210,19 +205,9 @@ import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import Tooltip from '@/components/Tooltip.vue'
-import { driver } from 'driver.js'
 
-const startTour = () => {
-  const driverObj = driver({
-    showProgress: true,
-    steps: [
-      { element: '#tour-liquid-total', popover: { title: 'Total Liquidity', description: 'This highlights your immediately accessible funds across all tracked accounts.' } },
-      { element: '#tour-accounts-list', popover: { title: 'Tracked Accounts', description: 'This section displays your individual accounts. You can click "Update Balance" to add a new balance snapshot for the current month.' } },
-      { element: '#tour-add-account', popover: { title: 'Add a New Account', description: 'Click here to add a new bank account or physical cash source to track.' } }
-    ]
-  });
-  driverObj.drive();
-}
+
+
 
 const accounts = ref([])
 const snapshots = ref([])
@@ -288,6 +273,7 @@ const archiveAccount = async (acc) => {
 }
 
 const restoreAccount = async (acc) => {
+  if (!confirm(`Are you sure you want to restore "${acc.name}"?`)) return
   try {
     await api.patch(`/banking/accounts/${acc.id}/`, { is_active: true })
     await fetchData()
@@ -380,6 +366,7 @@ const saveBalance = async () => {
     const existing = snapshots.value.find(s => s.account === updateForm.value.accountId && s.month === updateForm.value.month && s.year === updateForm.value.year)
     
     if (existing) {
+      if (!confirm('Are you sure you want to update this balance snapshot?')) return
       await api.patch(`/banking/snapshots/${existing.id}/`, { balance: updateForm.value.balance })
     } else {
       await api.post('/banking/snapshots/', {
@@ -419,6 +406,7 @@ const startEditType = (type) => {
 
 const updateAccountType = async (id) => {
   if (!editingTypeName.value.trim()) return
+  if (!confirm(`Are you sure you want to update account type to "${editingTypeName.value.trim()}"?`)) return
   try {
     await api.patch(`/banking/account-types/${id}/`, { name: editingTypeName.value.trim() })
     editingTypeId.value = null
@@ -430,6 +418,7 @@ const updateAccountType = async (id) => {
 }
 
 const toggleArchiveType = async (type) => {
+  if (!confirm(`Are you sure you want to ${type.is_active ? 'archive' : 'unarchive'} this account type?`)) return
   try {
     await api.patch(`/banking/account-types/${type.id}/`, { is_active: !type.is_active })
     await fetchData()

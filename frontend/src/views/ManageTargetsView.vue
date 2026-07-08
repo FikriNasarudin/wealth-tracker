@@ -455,6 +455,7 @@ const saveTarget = async () => {
     }
     
     if (form.value.id) {
+      if (!confirm('Are you sure you want to update this target?')) return
       await api.patch(`/budgeting/targets/${form.value.id}/`, targetPayload)
     } else {
       await api.post('/budgeting/targets/', targetPayload)
@@ -482,6 +483,7 @@ const saveCategory = async () => {
   loading.value = true
   try {
     if (catForm.value.id) {
+      if (!confirm('Are you sure you want to update this category?')) return
       await api.patch(`/budgeting/categories/${catForm.value.id}/`, catForm.value)
     } else {
       await api.post('/budgeting/categories/', catForm.value)

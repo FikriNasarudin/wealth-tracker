@@ -36,6 +36,10 @@ const show = ref(false)
   vertical-align: middle;
 }
 
+.tooltip-wrapper:hover {
+  z-index: 9999;
+}
+
 .tooltip-icon {
   color: var(--text-muted);
   display: flex;
@@ -54,7 +58,7 @@ const show = ref(false)
   transform: translateX(-50%);
   width: max-content;
   max-width: 250px;
-  background: var(--bg-card);
+  background: rgb(18, 25, 41);
   border: 1px solid var(--border-color);
   padding: 1rem;
   border-radius: 0.5rem;

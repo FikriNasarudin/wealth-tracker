@@ -6,10 +6,6 @@
         <p class="text-muted">Track your progress towards your financial milestones.</p>
       </div>
       <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-        <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-          <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          Help
-        </button>
         <button id="tour-create-goal" class="btn btn-primary" @click="showModal = true">+ Create Goal</button>
       </div>
     </header>
@@ -29,7 +25,7 @@
               <h3 style="margin: 0; font-weight: 600;">{{ goal.name }}</h3>
               <div class="text-muted" style="font-size: 0.875rem;">
                 Target: {{ goal.target_date ? goal.target_date : 'No deadline' }}
-                <Tooltip title="Target Date" description="The deadline you have set to achieve this financial goal." example="Dec 31, 2026" />
+                <Tooltip title="Target Deadline" description="The date you aim to achieve this financial target." example="Dec 31, 2026" />
               </div>
             </div>
           </div>
@@ -59,7 +55,7 @@
         
         <div style="text-align: right; font-size: 0.875rem; font-weight: 600;" :style="{ color: goal.color || 'var(--primary)' }">
           {{ Math.round((goal.current_amount / goal.target_amount) * 100) }}% Complete
-          <Tooltip title="Completion Percentage" description="How close you are to reaching your target amount." example="RM5,000 / RM10,000 = 50% Complete" />
+          <Tooltip title="Goal Progress" description="How close you are to reaching the target amount based on your currently saved balance." />
         </div>
       </div>
     </div>
@@ -151,18 +147,9 @@ import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 import Modal from '@/components/Modal.vue'
 import Tooltip from '@/components/Tooltip.vue'
-import { driver } from 'driver.js'
 
-const startTour = () => {
-  const driverObj = driver({
-    showProgress: true,
-    steps: [
-      { element: '#tour-create-goal', popover: { title: 'Create Goal', description: 'Click here to set up a new financial goal with a target amount and deadline.' } },
-      { popover: { title: 'Manage Goals', description: 'Once you create a goal, it will appear here. You can click "Edit" to update your current saved amount at any time.' } }
-    ]
-  });
-  driverObj.drive();
-}
+
+
 
 const goals = ref([])
 const showModal = ref(false)
@@ -185,6 +172,7 @@ const archiveGoal = async (goal) => {
 }
 
 const restoreGoal = async (goal) => {
+  if (!confirm(`Are you sure you want to restore "${goal.name}"?`)) return
   try {
     await api.patch(`/goals/${goal.id}/`, { is_active: true })
     await fetchData()
@@ -249,6 +237,7 @@ const saveGoal = async () => {
     if (payload.current_amount === '') payload.current_amount = 0
     
     if (isEditing.value) {
+      if (!confirm('Are you sure you want to update this goal?')) return
       await api.patch(`/goals/${payload.id}/`, payload)
     } else {
       await api.post('/goals/', payload)

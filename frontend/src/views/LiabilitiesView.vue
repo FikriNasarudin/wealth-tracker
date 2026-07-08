@@ -6,17 +6,11 @@
         <p class="text-muted">Track your outstanding debts and loans.</p>
       </div>
       <div style="display: flex; gap: 1rem; align-items: center;">
-        <button class="btn btn-secondary" @click="startTour" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-          <svg style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          Help
-        </button>
         <SearchableSelect v-model="selectedPeriod" :options="trendOptions" @change="handleFilterChange" placeholder="Select Period" style="width: 140px;" />
         <select v-model="filterLender" class="form-input" style="width: 150px;" @change="handleFilterChange">
           <option value="">All Lenders</option>
           <option v-for="l in lenders" :key="l.id" :value="l.id">{{ l.name }}</option>
         </select>
-        
-        <router-link to="/liabilities/manage" class="btn btn-secondary">Manage Cards & Lenders</router-link>
         
         <button id="tour-add-liability" class="btn btn-primary" @click="showModal = true" style="margin-left: 1rem;">+ Add Snapshot</button>
       </div>
@@ -24,7 +18,10 @@
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
       <div class="card card-indigo">
-        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">Original Loan Amount</div>
+        <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
+          Original Loan Amount
+          <Tooltip title="Original Loan Amount" description="The initial principal amount you borrowed before making any repayments." example="Car loan principal of RM80,000" />
+        </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
           <div class="skeleton skeleton-text" style="width: 50%;"></div>
@@ -44,7 +41,7 @@
       <div id="tour-remaining-principal" class="card card-royal">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           Remaining Principal
-          <Tooltip title="Remaining Principal" description="The total amount of debt you still owe to your lenders, not including future interest." example="RM100,000 borrowed - RM20,000 paid = RM80,000 Remaining" />
+          <Tooltip title="Remaining Debt" description="The total amount of principal debt you still owe to your lenders, excluding future interest." example="Remaining mortgage or loan balance" />
         </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
@@ -65,7 +62,7 @@
       <div id="tour-debt-reduced" class="card card-emerald">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
           Total Debt Reduced
-          <Tooltip title="Total Debt Reduced" description="The absolute amount of principal debt you have successfully paid off." example="RM100,000 Original - RM80,000 Remaining = RM20,000 Reduced" />
+          <Tooltip title="Debt Paid Off" description="The cumulative amount of principal debt you have successfully paid off so far." example="Original RM50k - Remaining RM40k = RM10k paid off" />
         </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
@@ -88,7 +85,7 @@
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
            Debt-to-Income (DTI)
-           <Tooltip title="Debt-to-Income Ratio" description="The percentage of your monthly income that goes towards paying minimum debt obligations." example="Ideally keep this below 36%." />
+           <Tooltip title="DTI Ratio" description="Percentage of gross monthly income spent on debt obligations. Keep under 36% for healthy standing." example="Ideal threshold: <36%" />
         </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
@@ -111,7 +108,7 @@
       <div class="card">
         <div class="text-muted" style="margin-bottom: 0.5rem; font-weight: 500;">
            Cost of Debt (Avg Interest)
-           <Tooltip title="Weighted Average Interest Rate" description="The average interest rate you are paying across all your active loans, weighted by how much you owe." example="A 10% loan of RM1,000 impacts this less than a 5% loan of RM100,000." />
+           <Tooltip title="Average Debt Cost" description="Weighted average interest rate based on the relative size of each of your loans." />
         </div>
         <template v-if="dataLoading">
           <div class="skeleton skeleton-metric" style="margin: 0.5rem 0;"></div>
@@ -134,7 +131,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
             Debt Reduction Progress
-            <Tooltip title="Debt Reduction Progress" description="Shows the decrease in your total liabilities month-over-month." example="Visualization of paying down your loan balances" />
+            <Tooltip title="Debt Paydown Trend" description="Chart visualizing your outstanding liabilities decreasing month-over-month." />
           </h3>
           <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
             <SearchableSelect v-model="debtProgressStart" :options="trendOptions" placeholder="Start Month" />
@@ -151,7 +148,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <h3 style="font-weight: 600; margin: 0; display: flex; align-items: center; gap: 0.25rem;">
             Original vs Remaining
-            <Tooltip title="Original vs Remaining" description="Compares the initial loan amounts against what you currently owe to show payoff progress." example="Original RM10,000 borrowed vs RM8,000 remaining" />
+            <Tooltip title="Original vs. Current Balance" description="Compares the initial principal borrowed against the current remaining balance for each loan." />
           </h3>
           <div class="trend-select-wrapper" style="display: flex; align-items: center; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.25rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
             <SearchableSelect v-model="origVsRemStart" :options="trendOptions" placeholder="Start Month" />
@@ -167,7 +164,7 @@
       <div class="card">
         <h3 style="margin-bottom: 1rem; font-weight: 600;">
           Liability Distribution (Current Month)
-          <Tooltip title="Liability Distribution" description="Visual breakdown of your current debts by category/lender to identify where your biggest liabilities lie." example="Credit cards vs mortgage vs student loans" />
+          <Tooltip title="Lender/Debt Allocation" description="Breakdown of your current outstanding liabilities categorized by lender or loan type." />
         </h3>
         <div v-if="distribution.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No liabilities recorded for this period.</div>
         <div v-else style="display: flex; justify-content: center; align-items: center; min-height: 250px;">
@@ -178,10 +175,10 @@
       <div id="tour-payoff-tracker" class="card">
         <h3 style="margin-bottom: 1rem; font-weight: 600;">
           Debt Payoff Tracker
-          <Tooltip title="Debt Payoff Tracker" description="Uses the Avalanche Method to show you how many months remain to clear each debt based on your interest rates and monthly payments." example="High interest loans are prioritized." />
+          <Tooltip title="Debt Snowball/Avalanche Tracker" description="Visualizes estimated months left to pay off each active debt based on interest rate and payment allocation." />
         </h3>
         <div v-if="payoffPlans.length === 0" class="text-muted" style="text-align: center; padding: 2rem;">No debt payoff plans available.</div>
-        <div v-else style="display: flex; flex-direction: column; gap: 1rem;">
+        <div v-else style="display: flex; flex-direction: column; gap: 1rem; max-height: 310px; overflow-y: auto; padding-right: 0.25rem;">
           <div v-for="plan in payoffPlans" :key="plan.id" style="border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1rem;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
               <span style="font-weight: 600;">{{ plan.lenderName }} ({{ plan.interestRate }}%)</span>
@@ -197,6 +194,64 @@
                 height: '100%',
                 background: 'var(--success)'
               }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Credit Limit Usage Section -->
+      <div v-if="creditLimitUsage.cards.length > 0" class="card">
+        <h3 style="margin-bottom: 1rem; font-weight: 600;">
+          Credit & Spending Limit Usage
+          <Tooltip title="Credit Utilization Ratio" description="Calculates outstanding balances against total credit limit across active cards. Keep under 30%." />
+        </h3>
+        
+        <!-- Overall Summary -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: rgba(255, 255, 255, 0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div>
+            <div class="text-muted" style="font-size: 0.85rem;">Overall Utilization</div>
+            <div style="font-size: 1.5rem; font-weight: 700;" :class="creditLimitUsage.overallUsagePercent > 70 ? 'text-danger' : (creditLimitUsage.overallUsagePercent > 30 ? 'text-warning' : 'text-success')">
+              {{ creditLimitUsage.overallUsagePercent.toFixed(1) }}%
+            </div>
+          </div>
+          <div>
+            <div class="text-muted" style="font-size: 0.85rem;">Total Limit</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">RM{{ formatCurrency(creditLimitUsage.totalLimit) }}</div>
+          </div>
+          <div>
+            <div class="text-muted" style="font-size: 0.85rem;">Total Outstanding</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--danger);">RM{{ formatCurrency(creditLimitUsage.totalOutstanding) }}</div>
+          </div>
+          <div>
+            <div class="text-muted" style="font-size: 0.85rem;">Total Available</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">RM{{ formatCurrency(creditLimitUsage.totalAvailable) }}</div>
+          </div>
+        </div>
+
+        <!-- Individual Cards -->
+        <div style="display: flex; flex-direction: column; gap: 1.25rem; max-height: 310px; overflow-y: auto; padding-right: 0.25rem;">
+          <div v-for="card in creditLimitUsage.cards" :key="card.id" style="border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1rem; background: rgba(255, 255, 255, 0.01);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+              <span style="font-weight: 600;">{{ card.name }} <span class="text-muted" style="font-size: 0.75rem; font-weight: normal;">({{ card.category }})</span></span>
+              <span :style="{ color: card.usagePercent > 70 ? 'var(--danger)' : (card.usagePercent > 30 ? 'var(--warning)' : 'var(--success)') }" style="font-weight: 500;">
+                {{ card.usagePercent.toFixed(1) }}% Utilized
+              </span>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+              <span>Outstanding: RM{{ formatCurrency(card.outstanding) }}</span>
+              <span>Limit: RM{{ formatCurrency(card.limit) }}</span>
+            </div>
+            
+            <div style="width: 100%; height: 8px; background: var(--bg-background); border-radius: 4px; overflow: hidden; margin-bottom: 0.25rem;">
+              <div :style="{
+                width: card.usagePercent + '%',
+                height: '100%',
+                background: card.usagePercent > 70 ? 'var(--danger)' : (card.usagePercent > 30 ? 'var(--warning)' : 'var(--success)')
+              }"></div>
+            </div>
+            <div class="text-muted" style="font-size: 0.75rem; text-align: right;">
+              RM{{ formatCurrency(card.available) }} available
             </div>
           </div>
         </div>
@@ -254,20 +309,9 @@ import PieChart from '@/components/PieChart.vue'
 import BarChart from '@/components/BarChart.vue'
 import GraphLine from '@/components/GraphLine.vue'
 import Tooltip from '@/components/Tooltip.vue'
-import { driver } from 'driver.js'
 
-const startTour = () => {
-  const driverObj = driver({
-    showProgress: true,
-    steps: [
-      { element: '#tour-remaining-principal', popover: { title: 'Remaining Debt', description: 'Monitor how much money you currently owe across all accounts.' } },
-      { element: '#tour-debt-reduced', popover: { title: 'Debt Paid Off', description: 'Celebrate your progress! This is the total amount of debt you have cleared.' } },
-      { element: '#tour-payoff-tracker', popover: { title: 'Avalanche Payoff Tracker', description: 'Automatically estimates how many months are left on your loans based on your interest rate and payments.' } },
-      { element: '#tour-add-liability', popover: { title: 'Log a Payment', description: 'Click here to add a new snapshot for a month after making a payment.' } }
-    ]
-  });
-  driverObj.drive();
-}
+
+
 
 const totalOriginal = ref(0)
 const totalRemaining = ref(0)
@@ -300,6 +344,50 @@ const reducedChange = computed(() => calculateChange(totalReduced.value, prevTot
 const originalDiff = computed(() => totalOriginal.value - prevTotalOriginal.value)
 const remainingDiff = computed(() => totalRemaining.value - prevTotalRemaining.value)
 const reducedDiff = computed(() => totalReduced.value - prevTotalReduced.value)
+
+const creditLimitUsage = computed(() => {
+  const cards = lenders.value.filter(l => {
+    const isCc = l.category_name && (
+      l.category_name.toLowerCase().includes('credit card') ||
+      l.category_name.toLowerCase().includes('pay later') ||
+      l.category_name.toLowerCase().includes('bnpl')
+    )
+    return isCc && l.is_active
+  })
+  
+  let totalLimit = 0
+  let totalOutstanding = 0
+  
+  const items = cards.map(c => {
+    const limit = parseFloat(c.original_loan_amount || 0)
+    const outstanding = parseFloat(c.calculated_remaining_principal || 0)
+    const available = Math.max(0, limit - outstanding)
+    const usagePercent = limit > 0 ? (outstanding / limit) * 100 : 0
+    
+    totalLimit += limit
+    totalOutstanding += outstanding
+    
+    return {
+      id: c.id,
+      name: c.name,
+      category: c.category_name,
+      limit,
+      outstanding,
+      available,
+      usagePercent: Math.min(100, usagePercent)
+    }
+  })
+  
+  const overallUsagePercent = totalLimit > 0 ? (totalOutstanding / totalLimit) * 100 : 0
+  
+  return {
+    cards: items,
+    totalLimit,
+    totalOutstanding,
+    totalAvailable: Math.max(0, totalLimit - totalOutstanding),
+    overallUsagePercent: Math.min(100, overallUsagePercent)
+  }
+})
 
 import SearchableSelect from '@/components/SearchableSelect.vue'
 
@@ -528,73 +616,89 @@ const fetchData = async () => {
     }
 
     try {
+      const lendRes = await api.get(`/liabilities/lenders/?month=${selectedMonth.value}&year=${selectedYear.value}`)
+      lenders.value = lendRes.data
+    } catch(e) {
+      console.error(e)
+    }
+
+    try {
       const allRes = await api.get(`/liabilities/snapshots/${filterLender.value ? '?lender_id=' + filterLender.value : ''}`)
       const allSnaps = allRes.data
       rawSnapshots.value = allSnaps
 
-      // Calculate Payoff Plans for selected month
-      const currentPriorSnaps = allSnaps.filter(s => {
-         const snapY = Number(s.year)
-         const snapM = Number(s.month)
-         if (snapY < selectedYear.value) return true;
-         if (snapY === selectedYear.value && snapM <= selectedMonth.value) return true;
-         return false;
-      })
-      
-      const latestPerLiabilitySelected = {}
-      currentPriorSnaps.forEach(s => {
-        const key = `${s.category}_${s.lender}`
-        if (!latestPerLiabilitySelected[key]) {
-          latestPerLiabilitySelected[key] = s
+      // Calculate Payoff Plans for selected month (itemized)
+      const itemsForPayoff = []
+      lenders.value.forEach(lender => {
+        if (!lender.is_active) return
+        if (filterLender.value && lender.id !== Number(filterLender.value)) return
+
+        if (lender.items && lender.items.length > 0) {
+          lender.items.forEach(item => {
+            const principal = parseFloat(item.remaining_balance || 0)
+            if (principal > 0) {
+              itemsForPayoff.push({
+                id: item.id,
+                name: `${item.name} (${lender.name})`,
+                interestRate: parseFloat(item.interest_rate || 0),
+                remainingPrincipal: principal,
+                originalAmount: parseFloat(item.value || 0),
+                monthlyPayment: parseFloat(item.monthly_payment || 0)
+              })
+            }
+          })
         } else {
-          const existing = latestPerLiabilitySelected[key]
-          if (s.year > existing.year || (s.year === existing.year && s.month > existing.month)) {
-            latestPerLiabilitySelected[key] = s
+          const principal = parseFloat(lender.calculated_remaining_principal || 0)
+          if (principal > 0) {
+            itemsForPayoff.push({
+              id: `lender_${lender.id}`,
+              name: lender.name,
+              interestRate: parseFloat(lender.interest_rate || 0),
+              remainingPrincipal: principal,
+              originalAmount: parseFloat(lender.original_loan_amount || 0),
+              monthlyPayment: parseFloat(lender.calculated_monthly_payment || 0)
+            })
           }
         }
       })
-      
+
       let sumPayments = 0;
       let sumWeightedInterest = 0;
       let sumPrincipalForInterest = 0;
       
-      payoffPlans.value = Object.values(latestPerLiabilitySelected)
-        .filter(s => parseFloat(s.remaining_principal) > 0)
-        .map(s => {
-          const lender = lenders.value.find(l => l.id === s.lender)
-          const interestRate = lender ? parseFloat(lender.interest_rate || 0) : 0
-          const principal = parseFloat(s.remaining_principal)
-          const payment = parseFloat(s.monthly_payment)
-          const original = parseFloat(s.original_loan_amount)
-          
-          sumPayments += payment;
-          sumWeightedInterest += (interestRate * principal);
-          sumPrincipalForInterest += principal;
-          
-          let months = 0
-          if (payment > 0) {
-            if (interestRate === 0) {
-              months = Math.ceil(principal / payment)
+      payoffPlans.value = itemsForPayoff.map(item => {
+        const interestRate = item.interestRate
+        const principal = item.remainingPrincipal
+        const payment = item.monthlyPayment
+        
+        sumPayments += payment;
+        sumWeightedInterest += (interestRate * principal);
+        sumPrincipalForInterest += principal;
+        
+        let months = 0
+        if (payment > 0) {
+          if (interestRate === 0) {
+            months = Math.ceil(principal / payment)
+          } else {
+            const r = interestRate / 100 / 12
+            if (payment > r * principal) {
+              months = Math.ceil(-Math.log(1 - (r * principal) / payment) / Math.log(1 + r))
             } else {
-              const r = interestRate / 100 / 12
-              if (payment > r * principal) {
-                months = Math.ceil(-Math.log(1 - (r * principal) / payment) / Math.log(1 + r))
-              } else {
-                months = 999 
-              }
+              months = 999 
             }
           }
-          
-          return {
-            id: s.id,
-            lenderName: lender ? lender.name : 'Unknown',
-            interestRate,
-            remainingPrincipal: principal,
-            originalAmount: original,
-            monthlyPayment: payment,
-            monthsRemaining: months > 900 ? '∞' : months
-          }
-        }).sort((a, b) => b.interestRate - a.interestRate)
+        }
+        
+        return {
+          id: item.id,
+          lenderName: item.name,
+          interestRate,
+          remainingPrincipal: principal,
+          originalAmount: item.originalAmount,
+          monthlyPayment: payment,
+          monthsRemaining: months > 900 ? '∞' : months
+        }
+      }).sort((a, b) => b.interestRate - a.interestRate)
 
       totalMonthlyDebtPayment.value = sumPayments;
       weightedAvgInterest.value = sumPrincipalForInterest > 0 ? (sumWeightedInterest / sumPrincipalForInterest) : 0;

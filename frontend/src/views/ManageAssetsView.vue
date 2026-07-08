@@ -100,7 +100,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
           <h3 style="font-weight: 600; margin: 0;">
             Categories
-            <Tooltip title="Asset Categories" description="Categorize your investment platforms into classes like Stocks, Crypto, Real Estate, etc." example="Stocks, Cash, Retirement" />
+            <Tooltip title="Asset Categories" description="Groups representing overall investment types (e.g. Stocks, Crypto, Cash) for general allocation views." />
           </h3>
           <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;" @click="showAddCategoryModal = true">+ Add Category</button>
         </div>
@@ -134,7 +134,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
           <h3 style="font-weight: 600; margin: 0;">
             Platforms
-            <Tooltip title="Investment Platforms" description="Define the platforms, brokers, or apps where your assets are held." example="IBKR, Luno, EPF, etc." />
+            <Tooltip title="Investment Platforms" description="Brokers, apps, or accounts where your assets are physically located (e.g. Luno, IBKR, EPF)." />
           </h3>
           <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;" @click="showAddPlatformModal = true">+ Add Platform</button>
         </div>
@@ -169,7 +169,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h3 style="font-weight: 600; margin: 0;">
           Assets
-          <Tooltip title="Investment Assets" description="Specific assets that are held within your platforms, tied to category types." example="Bitcoin, ETH, Apple Stock, TSLA, S&P 500" />
+          <Tooltip title="Investment Assets" description="Individual assets or tickers (e.g. BTC, Apple Stock, S&P 500) held inside a platform." />
         </h3>
         <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;" @click="showAddAssetModal = true">+ Add Asset</button>
       </div>
@@ -321,6 +321,7 @@ const cancelEditCategory = () => {
 const saveCategory = async () => {
   const cat = editingCategory.value
   if (!cat || !cat.editName.trim()) return
+  if (!confirm(`Are you sure you want to update category "${cat.name}" to "${cat.editName}"?`)) return
   loading.value.cat = true
   try {
     await api.patch(`/assets/categories/${cat.id}/`, { name: cat.editName })
@@ -336,6 +337,7 @@ const saveCategory = async () => {
 const toggleCategoryStatus = async (cat) => {
   try {
     const newStatus = !cat.is_active
+    if (!confirm(`Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} category "${cat.name}"?`)) return
     await api.patch(`/assets/categories/${cat.id}/`, { is_active: newStatus })
     cat.is_active = newStatus
   } catch (e) { console.error(e) }
@@ -357,6 +359,7 @@ const cancelEditPlatform = () => {
 const savePlatform = async () => {
   const plat = editingPlatform.value
   if (!plat || !plat.editName.trim()) return
+  if (!confirm(`Are you sure you want to update platform "${plat.name}" to "${plat.editName}"?`)) return
   loading.value.plat = true
   try {
     await api.patch(`/assets/platforms/${plat.id}/`, { 
@@ -374,6 +377,7 @@ const savePlatform = async () => {
 const togglePlatformStatus = async (plat) => {
   try {
     const newStatus = !plat.is_active
+    if (!confirm(`Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} platform "${plat.name}"?`)) return
     await api.patch(`/assets/platforms/${plat.id}/`, { is_active: newStatus })
     plat.is_active = newStatus
   } catch (e) { console.error(e) }
@@ -396,6 +400,7 @@ const cancelEditAsset = () => {
 const saveAsset = async () => {
   const asset = editingAsset.value
   if (!asset || !asset.editName.trim() || !asset.editCategoryId) return
+  if (!confirm(`Are you sure you want to update asset "${asset.name}"?`)) return
   loading.value.asset = true
   try {
     await api.patch(`/assets/assets/${asset.id}/`, { 
@@ -414,6 +419,7 @@ const saveAsset = async () => {
 const toggleAssetStatus = async (asset) => {
   try {
     const newStatus = !asset.is_active
+    if (!confirm(`Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} asset "${asset.name}"?`)) return
     await api.patch(`/assets/assets/${asset.id}/`, { is_active: newStatus })
     asset.is_active = newStatus
   } catch (e) { console.error(e) }
